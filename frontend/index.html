@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cortex Trivia</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <h1 class="brand">Cortex Trivia</h1>
+
+      <!-- I keep this as plain text for now; later backend status can update it -->
+      <span class="pill" id="appStatus">UI only</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Lobby</h2>
+      <p class="muted">
+        Starter UI. I’m keeping it simple until the backend API is finalized.
+      </p>
+
+      <div class="grid">
+        <div class="panel">
+          <h3>Create session</h3>
+          <label class="label" for="createName">Nickname</label>
+          <input class="input" id="createName" placeholder="Jose" maxlength="16" />
+          <button class="btn primary" id="createBtn">Create</button>
+        </div>
+
+        <div class="panel">
+          <h3>Join session</h3>
+          <label class="label" for="joinCode">Session code</label>
+          <input class="input" id="joinCode" placeholder="ABC123" maxlength="12" />
+          <label class="label" for="joinName">Nickname</label>
+          <input class="input" id="joinName" placeholder="Daniel" maxlength="16" />
+          <button class="btn" id="joinBtn">Join</button>
+        </div>
+      </div>
+
+      <div class="status" id="statusText">Ready.</div>
+
+      <div class="divider"></div>
+
+      <div class="session">
+        <div>
+          <div class="label muted">Session</div>
+          <div class="mono" id="sessionCode">—</div>
+        </div>
+        <div>
+          <div class="label muted">Players</div>
+          <div id="playerList" class="muted">—</div>
+        </div>
+
+        <div class="session__actions">
+          <button class="btn primary" id="startBtn" disabled>Start</button>
+          <button class="btn danger" id="leaveBtn" disabled>Leave</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3>Question (preview)</h3>
+      <!-- I’m previewing the question layout now so backend integration is easier later -->
+      <div class="question">
+        <div class="row">
+          <div class="mono" id="timer">—</div>
+          <button class="btn" id="demoBtn">Load demo question</button>
+        </div>
+
+        <h4 id="questionText">—</h4>
+        <div class="answers" id="answers"></div>
+
+        <div class="row right">
+          <button class="btn primary" id="submitBtn" disabled>Submit</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
+
