@@ -1,172 +1,189 @@
-// I keep the UI state local for now so the team can agree on API shape later.
-const state = {
-  inSession: false,
-  sessionCode: null,
-  players: [],
-  question: null,
-  selectedAnswerId: null,
-  timerId: null,
-  secondsLeft: 0,
-};
+/**
+ * Cortex Trivia — Sprint 2 Demo (Team Boundaries)
+ *
+ * Why this file exists:
+ * - My job is to prove the quiz page can render a real question set from our seed data,
+ *   and that the quiz can move through 10 unique questions without repeats.
+ *
+ * What I’m intentionally NOT doing here:
+ * - I’m not implementing scoring, correctness checks, or button-driven gameplay.
+ *   Those behaviors belong to the teammate owning scoring + button wiring.
+ *
+ * Why auto-advance is used:
+ * - I still need the quiz to progress “one-by-one” for the demo, but I don’t want to
+ *   steal the scoring/button work. Auto-advancing lets me demonstrate the UI flow
+ *   while keeping ownership boundaries clear.
+ */
 
+const page = document.body?.dataset?.page || "";
 const $ = (id) => document.getElementById(id);
 
-// I group DOM references so I don’t keep searching the page repeatedly.
-const ui = {
-  status: $("statusText"),
-  sessionCode: $("sessionCode"),
-  playerList: $("playerList"),
-  timer: $("timer"),
-  questionText: $("questionText"),
-  answers: $("answers"),
+const STORAGE_KEY = "ct_demo_quiz_v1";
 
-  createBtn: $("createBtn"),
-  joinBtn: $("joinBtn"),
-  startBtn: $("startBtn"),
-  leaveBtn: $("leaveBtn"),
-  demoBtn: $("demoBtn"),
-  submitBtn: $("submitBtn"),
-};
-
-function setStatus(msg) {
-  ui.status.textContent = msg;
+// I’m using sessionStorage so the chosen 10-question set stays consistent if the page refreshes mid-demo.
+function saveQuizState(state) {
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-// I render from state so I can swap "local state" for "backend state" later.
-function renderSession() {
-  ui.sessionCode.textContent = state.sessionCode ?? "—";
-  ui.playerList.textContent = state.players.length ? state.players.join(", ") : "—";
-  ui.startBtn.disabled = !state.inSession;
-  ui.leaveBtn.disabled = !state.inSession;
+function loadQuizState() {
+  const raw = sessionStorage.getItem(STORAGE_KEY);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
 }
 
-function clearAnswers() {
-  ui.answers.innerHTML = "";
-  state.selectedAnswerId = null;
-  ui.submitBtn.disabled = true;
+// I clear quiz state on results so the next run is a fresh randomized set.
+function clearQuizState() {
+  sessionStorage.removeItem(STORAGE_KEY);
 }
 
-function renderQuestion() {
-  clearAnswers();
+// I shuffle to get a fair random sampling without needing “used question” bookkeeping for this demo scope.
+function shuffleInPlace(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
-  if (!state.question) {
-    ui.questionText.textContent = "—";
-    ui.timer.textContent = "—";
-    return;
+// I fetch from /db via relative path because quiz.html lives in /frontend.
+async function fetchQuestionBank() {
+  const res = await fetch("../db/questions.seed.json", { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to load questions.seed.json (${res.status})`);
+
+  const data = await res.json();
+  if (!Array.isArray(data)) throw new Error("questions.seed.json must be an array.");
+  return data;
+}
+
+// I pick 10 by shuffling and slicing so each question is unique within a single run (no repeats in the quiz).
+function buildQuizSet(questionBank) {
+  const picked = shuffleInPlace([...questionBank]).slice(0, 10);
+
+  return {
+    idx: 0,
+    questions: picked,
+    startedAt: Date.now(),
+  };
+}
+
+function setText(el, txt) {
+  if (el) el.textContent = txt;
+}
+
+// -------------------- LOBBY (index.html) --------------------
+function initLobby() {
+  // I’m leaving lobby wiring empty on purpose. Session create/join/start is owned by another teammate.
+  // This page should remain stable so they can attach their handlers to the existing element IDs.
+}
+
+// -------------------- QUIZ (quiz.html) --------------------
+function initQuiz() {
+  const questionText = $("questionText");
+  const answersEl = $("answers");
+  const statusEl = $("quizStatus");
+  const progressPill = $("progressPill");
+  const timerPill = $("timerPill");
+
+  const submitBtn = $("submitBtn");
+  const nextBtn = $("nextBtn");
+
+  // I’m disabling these controls because scoring + button-driven progression is out of my scope.
+  if (submitBtn) submitBtn.disabled = true;
+  if (nextBtn) nextBtn.disabled = true;
+
+  // I keep the timer short to make the “10 questions” flow visible in a quick demo run.
+  const QUESTION_SECONDS = 6;
+  let timerId = null;
+  let secondsLeft = QUESTION_SECONDS;
+
+  function stopTimer() {
+    if (timerId) clearInterval(timerId);
+    timerId = null;
   }
 
-  ui.questionText.textContent = state.question.text;
-  ui.submitBtn.disabled = false;
+  function startTimer(onExpired) {
+    stopTimer();
+    secondsLeft = QUESTION_SECONDS;
+    setText(timerPill, `Auto-next in: ${secondsLeft}s`);
 
-  state.question.answers.forEach((a) => {
-    const btn = document.createElement("button");
-    btn.className = "answer";
-    btn.textContent = a.text;
+    timerId = setInterval(() => {
+      secondsLeft -= 1;
+      setText(timerPill, `Auto-next in: ${secondsLeft}s`);
+      if (secondsLeft <= 0) {
+        stopTimer();
+        onExpired();
+      }
+    }, 1000);
+  }
 
-    btn.addEventListener("click", () => {
-      state.selectedAnswerId = a.id;
-      ui.answers.querySelectorAll(".answer").forEach((b) => b.classList.remove("selected"));
-      btn.classList.add("selected");
+  function renderQuestion(state) {
+    const q = state.questions[state.idx];
+    if (!q) return;
+
+    setText(progressPill, `Question ${state.idx + 1} / 10`);
+    setText(questionText, q.question);
+
+    // I render answers as disabled buttons to show the intended UI without taking ownership of selection logic.
+    answersEl.innerHTML = "";
+    q.choices.forEach((choiceText) => {
+      const btn = document.createElement("button");
+      btn.className = "answer";
+      btn.type = "button";
+      btn.disabled = true;
+      btn.textContent = choiceText;
+      answersEl.appendChild(btn);
     });
 
-    ui.answers.appendChild(btn);
-  });
-}
+    setText(
+      statusEl,
+      "Demo: questions are randomized with no repeats. Submit/Next/scoring will be implemented by the scoring owner."
+    );
 
-// I keep a tiny timer only to preview UI; real games should trust backend timing.
-function startTimer(seconds) {
-  stopTimer();
-  state.secondsLeft = seconds;
-  ui.timer.textContent = `${state.secondsLeft}s`;
+    startTimer(() => advance(state));
+  }
 
-  state.timerId = setInterval(() => {
-    state.secondsLeft -= 1;
-    ui.timer.textContent = `${state.secondsLeft}s`;
-    if (state.secondsLeft <= 0) {
-      stopTimer();
-      ui.submitBtn.disabled = true;
-      setStatus("Time’s up (demo).");
+  function advance(state) {
+    state.idx += 1;
+    saveQuizState(state);
+
+    if (state.idx >= 10) {
+      // I navigate after 10 questions to match the intended website flow while staying out of scoring logic.
+      window.location.href = "./results.html";
+      return;
     }
-  }, 1000);
+
+    renderQuestion(state);
+  }
+
+  (async () => {
+    setText(statusEl, "Fetching question bank…");
+
+    let state = loadQuizState();
+    if (!state) {
+      const bank = await fetchQuestionBank();
+      state = buildQuizSet(bank);
+      saveQuizState(state);
+    }
+
+    renderQuestion(state);
+  })().catch((err) => {
+    console.error(err);
+    setText(statusEl, `Error: ${err.message}`);
+    setText(questionText, "Could not load questions.");
+    stopTimer();
+  });
+
+  window.addEventListener("beforeunload", () => stopTimer());
 }
 
-function stopTimer() {
-  if (state.timerId) clearInterval(state.timerId);
-  state.timerId = null;
+// -------------------- RESULTS (results.html) --------------------
+function initResults() {
+  // I clear quiz state here so each new run starts with a fresh randomized set of questions.
+  clearQuizState();
 }
 
-function loadDemoQuestion() {
-  // I use a demo question so the layout is testable without backend work yet.
-  state.question = {
-    text: "Demo: Which layer typically handles UI in a web app?",
-    answers: [
-      { id: "a", text: "Frontend" },
-      { id: "b", text: "Database" },
-      { id: "c", text: "Kernel drivers" },
-      { id: "d", text: "Compiler pipeline" },
-    ],
-  };
-  renderQuestion();
-  startTimer(15);
-  setStatus("Loaded demo question.");
-}
-
-ui.createBtn.addEventListener("click", () => {
-  const name = $("createName").value.trim() || "Player1";
-
-  // I generate a fake code now; later the backend will return the real session code.
-  state.inSession = true;
-  state.sessionCode = Math.random().toString(36).slice(2, 8).toUpperCase();
-  state.players = [name];
-
-  renderSession();
-  setStatus(`Created session ${state.sessionCode} (demo).`);
-});
-
-ui.joinBtn.addEventListener("click", () => {
-  const code = $("joinCode").value.trim().toUpperCase();
-  const name = $("joinName").value.trim() || "Player";
-
-  if (!code) return setStatus("Enter a session code first.");
-
-  // I accept the code locally for now; later the backend will validate it.
-  state.inSession = true;
-  state.sessionCode = code;
-  state.players = [name];
-
-  renderSession();
-  setStatus(`Joined session ${code} (demo).`);
-});
-
-ui.startBtn.addEventListener("click", () => {
-  // I don’t start a real game yet; the backend will own the game state.
-  setStatus("Start clicked (no backend yet).");
-});
-
-ui.leaveBtn.addEventListener("click", () => {
-  stopTimer();
-  state.inSession = false;
-  state.sessionCode = null;
-  state.players = [];
-  state.question = null;
-  state.selectedAnswerId = null;
-
-  renderSession();
-  renderQuestion();
-  setStatus("Left session.");
-});
-
-ui.demoBtn.addEventListener("click", loadDemoQuestion);
-
-ui.submitBtn.addEventListener("click", () => {
-  if (!state.selectedAnswerId) return setStatus("Pick an answer first.");
-
-  // I only show what would be submitted; later this will POST to the backend.
-  setStatus(`Submitted "${state.selectedAnswerId}" (demo).`);
-});
-
-// initial paint
-renderSession();
-renderQuestion();
-setStatus("Ready.");
+// -------------------- BOOT --------------------
+if (page === "lobby") initLobby();
+if (page === "quiz") initQuiz();
+if (page === "results") initResults();
 
