@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cortex Trivia — Results</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body data-page="results">
+  <!--
+    Why this page exists:
+    - I want a dedicated Results page so the end-to-end website flow is visible in the demo.
+
+    What I’m leaving for the scoring owner:
+    - The actual numbers (correct/wrong/score) will be populated by their scoring logic.
+    - I’m only providing the layout and placeholders so the wiring is straightforward later.
+  -->
+
+  <header class="header">
+    <div class="container header__inner">
+      <h1 class="brand">Cortex Trivia</h1>
+      <span class="pill">Results</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Quiz Results (UI)</h2>
+      <p class="muted">
+        I’m providing the layout only. The scoring/logic owner will populate these values.
+      </p>
+
+      <div class="grid">
+        <div class="panel">
+          <div class="label muted">Correct</div>
+          <div class="big" id="correctCount">—</div>
+        </div>
+
+        <div class="panel">
+          <div class="label muted">Wrong</div>
+          <div class="big" id="wrongCount">—</div>
+        </div>
+
+        <div class="panel">
+          <div class="label muted">Score</div>
+          <div class="big"><span id="scorePoints">—</span> / 100</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="row right">
+        <!-- I return to Lobby to match the website flow expectation after viewing results. -->
+        <a class="btn primary" href="./index.html" id="backLobbyBtn">Back to Lobby</a>
+      </div>
+
+      <div class="status" id="resultsStatus">
+        UI ready. Results values will be wired by the scoring/logic owner.
+      </div>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
+

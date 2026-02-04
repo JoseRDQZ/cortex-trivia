@@ -3,79 +3,117 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cortex Trivia</title>
+  <title>Cortex Trivia — Lobby</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
-<body>
+
+<body data-page="lobby">
+  <!--
+    Why this page exists:
+    - I want a stable “Lobby” entrypoint for the website (index.html is the default for hosting).
+    - My scope is page/UI construction. Session creation/joining and Start Game wiring will be done by another teammate.
+
+    How to use this page in the demo:
+    - The visible UI communicates the intended flow.
+    - Buttons that belong to session logic are intentionally disabled so ownership stays clear.
+  -->
+
   <header class="header">
     <div class="container header__inner">
       <h1 class="brand">Cortex Trivia</h1>
-
-      <!-- I keep this as plain text for now; later backend status can update it -->
-      <span class="pill" id="appStatus">UI only</span>
+      <div class="row">
+        <span class="pill">Sprint 2 Demo</span>
+        <span class="pill">Lobby UI</span>
+      </div>
     </div>
   </header>
 
   <main class="container">
-    <section class="card">
-      <h2>Lobby</h2>
-      <p class="muted">
-        Starter UI. I’m keeping it simple until the backend API is finalized.
-      </p>
+    <section class="grid">
+      <div class="card">
+        <h2>Session Lobby</h2>
+        <p class="muted">
+          I’m building the UI and page flow. Session logic (create/join/start) will be wired by the session owner.
+        </p>
 
-      <div class="grid">
         <div class="panel">
-          <h3>Create session</h3>
-          <label class="label" for="createName">Nickname</label>
+          <h3>Create Session (UI)</h3>
+          <label class="label" for="createName">Your name</label>
           <input class="input" id="createName" placeholder="Jose" maxlength="16" />
-          <button class="btn primary" id="createBtn">Create</button>
+
+          <!-- I’m keeping this disabled because it requires session/host logic outside my scope. -->
+          <div class="row right">
+            <button class="btn primary" id="createBtn" disabled>Create</button>
+          </div>
         </div>
 
         <div class="panel">
-          <h3>Join session</h3>
+          <h3>Join Session (UI)</h3>
           <label class="label" for="joinCode">Session code</label>
-          <input class="input" id="joinCode" placeholder="ABC123" maxlength="12" />
-          <label class="label" for="joinName">Nickname</label>
-          <input class="input" id="joinName" placeholder="Daniel" maxlength="16" />
-          <button class="btn" id="joinBtn">Join</button>
+          <input class="input" id="joinCode" placeholder="ABC123" maxlength="10" />
+          <label class="label" for="joinName">Your name</label>
+          <input class="input" id="joinName" placeholder="Jose" maxlength="16" />
+
+          <!-- I’m keeping this disabled because it requires session/host logic outside my scope. -->
+          <div class="row right">
+            <button class="btn primary" id="joinBtn" disabled>Join</button>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="panel">
+          <div class="row">
+            <div>
+              <div class="label muted">Session</div>
+              <!-- I’m leaving placeholders so the session owner can populate these later. -->
+              <div class="mono" id="sessionCode">—</div>
+            </div>
+            <div>
+              <div class="label muted">Players</div>
+              <div class="mono" id="playerList">—</div>
+            </div>
+          </div>
+
+          <div class="row right">
+            <button class="btn" id="leaveBtn" disabled>Leave</button>
+
+            <!-- Start Game will eventually navigate to quiz.html, but the button wiring is not mine to implement. -->
+            <button class="btn primary" id="startBtn" disabled>Start Game</button>
+          </div>
+
+          <div class="status" id="statusText">
+            UI ready. Start Game will be wired to quiz.html by the session/logic owner.
+          </div>
+
+          <!--
+            I’m keeping this dev link so I can test page-to-page navigation during development.
+            It’s not intended to replace the Start Game button once wiring is added.
+          -->
+          <div class="row right">
+            <a class="link" href="./quiz.html" id="devOpenQuizLink">Dev: open quiz page</a>
+          </div>
         </div>
       </div>
 
-      <div class="status" id="statusText">Ready.</div>
+      <div class="card">
+        <h2>Quiz Preview</h2>
+        <p class="muted">
+          The quiz page fetches the real question bank from <span class="mono">db/questions.seed.json</span>
+          and displays 10 random non-repeating questions for the demo.
+        </p>
 
-      <div class="divider"></div>
-
-      <div class="session">
-        <div>
-          <div class="label muted">Session</div>
-          <div class="mono" id="sessionCode">—</div>
+        <div class="panel">
+          <div class="label muted">Planned demo behavior:</div>
+          <ul class="muted">
+            <li>10 questions selected at random</li>
+            <li>No repeats within the same quiz run</li>
+            <li>Buttons + scoring are owned by another teammate</li>
+          </ul>
         </div>
-        <div>
-          <div class="label muted">Players</div>
-          <div id="playerList" class="muted">—</div>
-        </div>
-
-        <div class="session__actions">
-          <button class="btn primary" id="startBtn" disabled>Start</button>
-          <button class="btn danger" id="leaveBtn" disabled>Leave</button>
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <h3>Question (preview)</h3>
-      <!-- I’m previewing the question layout now so backend integration is easier later -->
-      <div class="question">
-        <div class="row">
-          <div class="mono" id="timer">—</div>
-          <button class="btn" id="demoBtn">Load demo question</button>
-        </div>
-
-        <h4 id="questionText">—</h4>
-        <div class="answers" id="answers"></div>
 
         <div class="row right">
-          <button class="btn primary" id="submitBtn" disabled>Submit</button>
+          <a class="btn" href="./results.html">Dev: open results page</a>
         </div>
       </div>
     </section>

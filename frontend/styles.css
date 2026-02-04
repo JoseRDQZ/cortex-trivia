@@ -57,3 +57,10 @@ body{ margin:0; background:var(--bg); color:var(--text); }
 
 .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
 
+/* --- Sprint 2 demo additions --- */
+.big {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
