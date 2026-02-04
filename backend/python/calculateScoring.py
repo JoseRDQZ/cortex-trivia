@@ -48,6 +48,10 @@ def calculate_how_right(player):
 
     return  result["score"]
 
+def clear_results():
+    with open(json_path, 'w') as file:
+        return json.dump({}, file)
+
 
 
 #This is a test The amount a player scores does not affect the other players /see results.json/
