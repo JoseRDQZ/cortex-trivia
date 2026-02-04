@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cortex Trivia — Quiz</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+
+<body data-page="quiz">
+  <!--
+    Why this page exists:
+    - I need a demo-ready quiz page that proves we can render questions from the real seed JSON.
+    - I’m implementing random selection + no-repeat for 10 questions (data + display responsibility).
+
+    What I’m avoiding on purpose:
+    - I’m not implementing Submit/Next scoring behavior; another teammate owns that logic.
+    - To keep the quiz moving during the demo without relying on buttons, I’m using auto-advance.
+  -->
+
+  <header class="header">
+    <div class="container header__inner">
+      <h1 class="brand">Cortex Trivia</h1>
+      <div class="row">
+        <span class="pill" id="progressPill">Question — / 10</span>
+        <span class="pill mono" id="timerPill">—</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <div class="row right">
+        <!-- I provide a safe escape back to Lobby during testing and demos. -->
+        <a class="btn danger" href="./index.html">Back to Lobby</a>
+      </div>
+
+      <h2 id="questionText">Loading question…</h2>
+
+      <div class="answers" id="answers">
+        <!--
+          I render answer choices as disabled buttons.
+          This communicates the intended UI without claiming ownership of selection/scoring behavior.
+        -->
+      </div>
+
+      <div class="row right">
+        <!-- These buttons are intentionally disabled; the scoring/button owner will wire them later. -->
+        <button class="btn primary" id="submitBtn" disabled>Submit</button>
+        <button class="btn" id="nextBtn" disabled>Next</button>
+      </div>
+
+      <div class="status" id="quizStatus">Fetching question set…</div>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
+
