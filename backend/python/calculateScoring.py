@@ -17,8 +17,8 @@ def save_score(player, score):
         results = {}
 
     result = results.get(player, {"score": 0, "total": 0})
-    result["score"] = result["score"] + int(score)
-    result["total"] = result["total"] + 1
+    result["score"] = result["score"] + int(score) * 10
+    result["total"] = result["total"] + 10
     results[player] = result
 
     with open(json_path, 'w') as file:
@@ -34,11 +34,31 @@ def calculate_final_score(player):
 
     return result["score"] * 100 / result["total"]
 
+def calculate_how_wrong(player):
+    with open(json_path, 'r') as file:
+        results = json.load(file)
+    result = results.get(player)
+
+    return  result["total"] - result["score"]
+
+def calculate_how_right(player):
+    with open(json_path, 'r') as file:
+        results = json.load(file)
+    result = results.get(player)
+
+    return  result["score"]
+
+
+
 #This is a test The amount a player scores does not affect the other players /see results.json/
 save_score("OHB", True)
 save_score("OHB", True)
 save_score("OHB", False)
 save_score("OHB", True)
 save_score("AHB", False)
+save_score("AHB", True)
+
 print(calculate_final_score("OHB"))
+print(calculate_how_wrong("OHB"))
+print(calculate_how_right("OHB"))
 #still haven't made a way to clear results.json, could be with a start game
