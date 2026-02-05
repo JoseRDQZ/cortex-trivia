@@ -7,7 +7,6 @@ json_path = os.path.join(current_folder, '..', '..', 'db', 'results.json')
 # Function needs to be called with player and score parameters
 # If player doesn't have a score it initiates at 0
 # The function does not rewrite values for a new session
-# TODO: Add section_id to the results or initiate results.json at the start of the game
 def save_score(player, score):
 
     try:
@@ -53,16 +52,3 @@ def clear_results():
         return json.dump({}, file)
 
 
-
-#This is a test The amount a player scores does not affect the other players /see results.json/
-save_score("OHB", True)
-save_score("OHB", True)
-save_score("OHB", False)
-save_score("OHB", True)
-save_score("AHB", False)
-save_score("AHB", True)
-
-print(calculate_final_score("OHB"))
-print(calculate_how_wrong("OHB"))
-print(calculate_how_right("OHB"))
-#still haven't made a way to clear results.json, could be with a start game
