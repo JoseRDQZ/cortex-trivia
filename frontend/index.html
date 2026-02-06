@@ -2,28 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>Cortex Trivia — Lobby</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 
+<!-- JOSE INTEGRATION: app.js uses data-page to decide which initializer to run -->
 <body data-page="lobby">
-  <!--
-    Why this page exists:
-    - I want a stable “Lobby” entrypoint for the website (index.html is the default for hosting).
-    - My scope is page/UI construction. Session creation/joining and Start Game wiring will be done by another teammate.
-
-    How to use this page in the demo:
-    - The visible UI communicates the intended flow.
-    - Buttons that belong to session logic are intentionally disabled so ownership stays clear.
-  -->
-
   <header class="header">
     <div class="container header__inner">
       <h1 class="brand">Cortex Trivia</h1>
       <div class="row">
         <span class="pill">Sprint 2 Demo</span>
-        <span class="pill">Lobby UI</span>
+        <span class="pill">Integrated Flow</span>
       </div>
     </div>
   </header>
@@ -33,30 +24,31 @@
       <div class="card">
         <h2>Session Lobby</h2>
         <p class="muted">
-          I’m building the UI and page flow. Session logic (create/join/start) will be wired by the session owner.
+          <!-- JOSE INTEGRATION: For demo readiness, I wired the lobby buttons to Daniel’s backend. -->
+          For the demo, I wired Create/Join/Start to the backend so we can test end-to-end.
         </p>
 
         <div class="panel">
-          <h3>Create Session (UI)</h3>
-          <label class="label" for="createName">Your name</label>
+          <h3>Create Session</h3>
+          <label class="label" for="createName">Host name</label>
           <input class="input" id="createName" placeholder="Jose" maxlength="16" />
 
-          <!-- I’m keeping this disabled because it requires session/host logic outside my scope. -->
           <div class="row right">
-            <button class="btn primary" id="createBtn" disabled>Create</button>
+            <!-- JOSE INTEGRATION: enabled for full integration -->
+            <button class="btn primary" id="createBtn">Create</button>
           </div>
         </div>
 
         <div class="panel">
-          <h3>Join Session (UI)</h3>
+          <h3>Join Session</h3>
           <label class="label" for="joinCode">Session code</label>
           <input class="input" id="joinCode" placeholder="ABC123" maxlength="10" />
-          <label class="label" for="joinName">Your name</label>
+          <label class="label" for="joinName">Player name</label>
           <input class="input" id="joinName" placeholder="Jose" maxlength="16" />
 
-          <!-- I’m keeping this disabled because it requires session/host logic outside my scope. -->
           <div class="row right">
-            <button class="btn primary" id="joinBtn" disabled>Join</button>
+            <!-- JOSE INTEGRATION: enabled for full integration -->
+            <button class="btn primary" id="joinBtn">Join</button>
           </div>
         </div>
 
@@ -66,7 +58,6 @@
           <div class="row">
             <div>
               <div class="label muted">Session</div>
-              <!-- I’m leaving placeholders so the session owner can populate these later. -->
               <div class="mono" id="sessionCode">—</div>
             </div>
             <div>
@@ -76,44 +67,29 @@
           </div>
 
           <div class="row right">
-            <button class="btn" id="leaveBtn" disabled>Leave</button>
+            <!-- JOSE INTEGRATION: enabled for full integration -->
+            <button class="btn" id="leaveBtn">Leave</button>
 
-            <!-- Start Game will eventually navigate to quiz.html, but the button wiring is not mine to implement. -->
-            <button class="btn primary" id="startBtn" disabled>Start Game</button>
+            <!-- JOSE INTEGRATION: Start Game calls backend /start and navigates to quiz.html -->
+            <button class="btn primary" id="startBtn">Start Game</button>
           </div>
 
-          <div class="status" id="statusText">
-            UI ready. Start Game will be wired to quiz.html by the session/logic owner.
-          </div>
-
-          <!--
-            I’m keeping this dev link so I can test page-to-page navigation during development.
-            It’s not intended to replace the Start Game button once wiring is added.
-          -->
-          <div class="row right">
-            <a class="link" href="./quiz.html" id="devOpenQuizLink">Dev: open quiz page</a>
-          </div>
+          <div class="status" id="statusText">Ready.</div>
         </div>
       </div>
 
       <div class="card">
-        <h2>Quiz Preview</h2>
+        <h2>Demo Notes</h2>
         <p class="muted">
-          The quiz page fetches the real question bank from <span class="mono">db/questions.seed.json</span>
-          and displays 10 random non-repeating questions for the demo.
+          Start Game creates a backend game and stores <span class="mono">game_id</span>. The quiz page then fetches
+          questions from <span class="mono">/game/&lt;game_id&gt;/questions</span>.
         </p>
-
         <div class="panel">
-          <div class="label muted">Planned demo behavior:</div>
           <ul class="muted">
-            <li>10 questions selected at random</li>
-            <li>No repeats within the same quiz run</li>
-            <li>Buttons + scoring are owned by another teammate</li>
+            <li>Quiz is 10 questions</li>
+            <li>Submit posts to backend for validation + scoring updates</li>
+            <li>Results pulls from backend results endpoint</li>
           </ul>
-        </div>
-
-        <div class="row right">
-          <a class="btn" href="./results.html">Dev: open results page</a>
         </div>
       </div>
     </section>
@@ -122,4 +98,3 @@
   <script src="./app.js"></script>
 </body>
 </html>
-

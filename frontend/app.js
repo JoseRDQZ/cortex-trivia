@@ -1,189 +1,452 @@
 /**
- * Cortex Trivia — Sprint 2 Demo (Team Boundaries)
+ * Cortex Trivia — Full Integration Frontend (Sprint 2)
  *
- * Why this file exists:
- * - My job is to prove the quiz page can render a real question set from our seed data,
- *   and that the quiz can move through 10 unique questions without repeats.
+ * Jose Rodriguez (me):
+ * - For demo readiness, I’m wiring the frontend to Daniel’s backend routes.
+ * - I’m keeping the logic simple and testable:
+ *   Lobby -> Start game -> Quiz -> Results -> Lobby
  *
- * What I’m intentionally NOT doing here:
- * - I’m not implementing scoring, correctness checks, or button-driven gameplay.
- *   Those behaviors belong to the teammate owning scoring + button wiring.
- *
- * Why auto-advance is used:
- * - I still need the quiz to progress “one-by-one” for the demo, but I don’t want to
- *   steal the scoring/button work. Auto-advancing lets me demonstrate the UI flow
- *   while keeping ownership boundaries clear.
+ * Ownership notes:
+ * - Daniel owns backend session + question delivery routes.
+ * - Renier owns scoring persistence and result calculations.
+ * - I’m only wiring UI + API calls here.
  */
 
-const page = document.body?.dataset?.page || "";
-const $ = (id) => document.getElementById(id);
+const API_BASE = "http://127.0.0.1:5000";
 
-const STORAGE_KEY = "ct_demo_quiz_v1";
+// I store demo state in sessionStorage so each browser window can act as a different “player”.
+const STORAGE_KEY = "cortex_demo_state_v1";
 
-// I’m using sessionStorage so the chosen 10-question set stays consistent if the page refreshes mid-demo.
-function saveQuizState(state) {
+function loadState() {
+  try {
+    return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function saveState(state) {
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-function loadQuizState() {
-  const raw = sessionStorage.getItem(STORAGE_KEY);
-  if (!raw) return null;
-  try { return JSON.parse(raw); } catch { return null; }
-}
-
-// I clear quiz state on results so the next run is a fresh randomized set.
-function clearQuizState() {
+function clearState() {
   sessionStorage.removeItem(STORAGE_KEY);
 }
 
-// I shuffle to get a fair random sampling without needing “used question” bookkeeping for this demo scope.
-function shuffleInPlace(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
+function $(id) {
+  return document.getElementById(id);
 }
 
-// I fetch from /db via relative path because quiz.html lives in /frontend.
-async function fetchQuestionBank() {
-  const res = await fetch("../db/questions.seed.json", { cache: "no-store" });
-  if (!res.ok) throw new Error(`Failed to load questions.seed.json (${res.status})`);
-
-  const data = await res.json();
-  if (!Array.isArray(data)) throw new Error("questions.seed.json must be an array.");
-  return data;
-}
-
-// I pick 10 by shuffling and slicing so each question is unique within a single run (no repeats in the quiz).
-function buildQuizSet(questionBank) {
-  const picked = shuffleInPlace([...questionBank]).slice(0, 10);
-
-  return {
-    idx: 0,
-    questions: picked,
-    startedAt: Date.now(),
-  };
-}
-
-function setText(el, txt) {
+function setText(id, txt) {
+  const el = $(id);
   if (el) el.textContent = txt;
 }
 
-// -------------------- LOBBY (index.html) --------------------
-function initLobby() {
-  // I’m leaving lobby wiring empty on purpose. Session create/join/start is owned by another teammate.
-  // This page should remain stable so they can attach their handlers to the existing element IDs.
+function makeSessionCode() {
+  const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "";
+  for (let i = 0; i < 6; i++) out += letters[Math.floor(Math.random() * letters.length)];
+  return out;
 }
 
-// -------------------- QUIZ (quiz.html) --------------------
+async function postJson(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  // If fetch fails at network level, this throws before we get here.
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`${res.status} ${text}`.trim());
+  }
+
+  return res.json();
+}
+
+async function getJson(path) {
+  const res = await fetch(`${API_BASE}${path}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`${res.status} ${text}`.trim());
+  }
+  return res.json();
+}
+
+/* -----------------------------
+   Lobby
+------------------------------ */
+
+function initLobby() {
+  const createName = $("createName");
+  const createBtn = $("createBtn");
+
+  const joinCode = $("joinCode");
+  const joinName = $("joinName");
+  const joinBtn = $("joinBtn");
+
+  const leaveBtn = $("leaveBtn");
+  const startBtn = $("startBtn");
+
+  const sessionCodeEl = $("sessionCode");
+  const playerListEl = $("playerList");
+  const statusText = $("statusText");
+
+  // Jose: single local state model for the lobby page.
+  let state =
+    loadState() ||
+    {
+      session_code: "",
+      players: [],
+      // Jose: “active_player” is who this browser window represents for submits/results.
+      active_player: "",
+      game_id: "",
+      // Jose: cache questions on the client only for UI navigation.
+      questions: [],
+      idx: 0,
+    };
+
+  function persist() {
+    saveState(state);
+  }
+
+  function setStatus(msg) {
+    if (statusText) statusText.textContent = msg;
+  }
+
+  function render() {
+    setText("sessionCode", state.session_code || "—");
+    setText("playerList", state.players.length ? state.players.join(", ") : "—");
+
+    // Jose: I allow clicking everything; status text guides the user.
+    if (!state.session_code) setStatus("Create or Join a session to begin.");
+    else setStatus(`Session ready (${state.session_code}). Press Start Game to create backend game.`);
+  }
+
+  // Create
+  createBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+
+    const host = (createName?.value || "").trim() || "Host";
+    state.session_code = makeSessionCode();
+    state.players = [host];
+    state.active_player = host;
+
+    // Reset any previous run
+    state.game_id = "";
+    state.questions = [];
+    state.idx = 0;
+
+    // Convenience: copy the code into join box for quick testing
+    if (joinCode) joinCode.value = state.session_code;
+
+    persist();
+    render();
+    setStatus(`Created session ${state.session_code} as ${host}.`);
+  });
+
+  // Join
+  joinBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+
+    const code = (joinCode?.value || "").trim().toUpperCase();
+    const player = (joinName?.value || "").trim() || "Player";
+
+    if (!code) {
+      setStatus("Enter a session code to join.");
+      return;
+    }
+
+    state.session_code = code;
+
+    if (!state.players.includes(player)) state.players.push(player);
+    state.active_player = player;
+
+    // Reset run state (joining should not reuse an old game_id)
+    state.game_id = "";
+    state.questions = [];
+    state.idx = 0;
+
+    persist();
+    render();
+    setStatus(`Joined session ${state.session_code} as ${player}.`);
+  });
+
+  // Leave
+  leaveBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+    clearState();
+    state = {
+      session_code: "",
+      players: [],
+      active_player: "",
+      game_id: "",
+      questions: [],
+      idx: 0,
+    };
+    render();
+    setStatus("Left session.");
+  });
+
+  // Start Game (backend)
+  startBtn?.addEventListener("click", async (e) => {
+    e.preventDefault();
+
+    if (!state.session_code) {
+      setStatus("Create or Join a session first.");
+      return;
+    }
+    if (!state.players.length) {
+      setStatus("You need at least one player to start.");
+      return;
+    }
+
+    setStatus("Starting game via backend…");
+
+    try {
+      // Daniel’s backend expects: { session_code, players }
+      const data = await postJson("/start", {
+        session_code: state.session_code,
+        players: state.players,
+      });
+
+      if (!data.game_id) {
+        throw new Error("Backend did not return game_id.");
+      }
+
+      state.game_id = data.game_id;
+
+      // Reset quiz progress
+      state.questions = [];
+      state.idx = 0;
+
+      persist();
+      setStatus("Game created. Opening quiz…");
+      window.location.href = "./quiz.html";
+    } catch (err) {
+      console.error(err);
+      setStatus(`Start failed: ${err.message}`);
+    }
+  });
+
+  render();
+}
+
+/* -----------------------------
+   Quiz
+------------------------------ */
+
 function initQuiz() {
   const questionText = $("questionText");
   const answersEl = $("answers");
   const statusEl = $("quizStatus");
   const progressPill = $("progressPill");
-  const timerPill = $("timerPill");
-
   const submitBtn = $("submitBtn");
   const nextBtn = $("nextBtn");
 
-  // I’m disabling these controls because scoring + button-driven progression is out of my scope.
-  if (submitBtn) submitBtn.disabled = true;
-  if (nextBtn) nextBtn.disabled = true;
+  // Disable until wired
+  submitBtn.disabled = true;
+  nextBtn.disabled = true;
 
-  // I keep the timer short to make the “10 questions” flow visible in a quick demo run.
-  const QUESTION_SECONDS = 6;
-  let timerId = null;
-  let secondsLeft = QUESTION_SECONDS;
+  let state = loadState();
 
-  function stopTimer() {
-    if (timerId) clearInterval(timerId);
-    timerId = null;
+  // Jose: guard against direct navigation without starting a game.
+  if (!state || !state.game_id) {
+    setText("questionText", "No active game found.");
+    setText("quizStatus", "Go back to the Lobby and press Start Game first.");
+    return;
   }
 
-  function startTimer(onExpired) {
-    stopTimer();
-    secondsLeft = QUESTION_SECONDS;
-    setText(timerPill, `Auto-next in: ${secondsLeft}s`);
+  let selectedAnswerIndex = null;
+  let submitted = false;
 
-    timerId = setInterval(() => {
-      secondsLeft -= 1;
-      setText(timerPill, `Auto-next in: ${secondsLeft}s`);
-      if (secondsLeft <= 0) {
-        stopTimer();
-        onExpired();
-      }
-    }, 1000);
+  function setStatus(msg) {
+    if (statusEl) statusEl.textContent = msg;
   }
 
-  function renderQuestion(state) {
+  function renderQuestion() {
     const q = state.questions[state.idx];
     if (!q) return;
 
-    setText(progressPill, `Question ${state.idx + 1} / 10`);
-    setText(questionText, q.question);
+    selectedAnswerIndex = null;
+    submitted = false;
 
-    // I render answers as disabled buttons to show the intended UI without taking ownership of selection logic.
+    setText("progressPill", `Question ${state.idx + 1} / ${state.questions.length}`);
+    setText("questionText", q.question);
+
     answersEl.innerHTML = "";
-    q.choices.forEach((choiceText) => {
+
+    q.choices.forEach((choiceText, i) => {
       const btn = document.createElement("button");
-      btn.className = "answer";
       btn.type = "button";
-      btn.disabled = true;
+      btn.className = "answer";
       btn.textContent = choiceText;
+
+      btn.addEventListener("click", () => {
+        if (submitted) return;
+
+        selectedAnswerIndex = i;
+
+        // Clear selection
+        Array.from(answersEl.querySelectorAll("button.answer")).forEach((b) =>
+          b.classList.remove("selected")
+        );
+        btn.classList.add("selected");
+
+        submitBtn.disabled = false;
+        setStatus("Selection ready. Press Submit.");
+      });
+
       answersEl.appendChild(btn);
     });
 
-    setText(
-      statusEl,
-      "Demo: questions are randomized with no repeats. Submit/Next/scoring will be implemented by the scoring owner."
-    );
-
-    startTimer(() => advance(state));
+    submitBtn.disabled = true;
+    nextBtn.disabled = true;
+    setStatus("Pick an answer.");
   }
 
-  function advance(state) {
-    state.idx += 1;
-    saveQuizState(state);
+  async function loadQuestionsIfNeeded() {
+    if (Array.isArray(state.questions) && state.questions.length === 10) return;
 
-    if (state.idx >= 10) {
-      // I navigate after 10 questions to match the intended website flow while staying out of scoring logic.
+    setStatus("Fetching questions from backend…");
+
+    // Daniel’s backend provides /game/<game_id>/questions
+    const data = await getJson(`/game/${encodeURIComponent(state.game_id)}/questions`);
+
+    if (!data.questions || !Array.isArray(data.questions)) {
+      throw new Error("Backend returned invalid questions payload.");
+    }
+
+    // Jose: clamp to 10 to match Sprint 2 demo.
+    state.questions = data.questions.slice(0, 10);
+    state.idx = 0;
+
+    saveState(state);
+  }
+
+  submitBtn.addEventListener("click", async () => {
+    if (selectedAnswerIndex === null) {
+      setStatus("Pick an answer first.");
+      return;
+    }
+
+    const q = state.questions[state.idx];
+    submitted = true;
+    submitBtn.disabled = true;
+
+    setStatus("Submitting answer…");
+
+    try {
+      // Daniel’s backend expects: { question_id, answer_index, player }
+      const resp = await postJson(`/game/${encodeURIComponent(state.game_id)}/submit`, {
+        question_id: q.id,
+        answer_index: selectedAnswerIndex,
+        player: state.active_player || state.players[0] || "Player",
+      });
+
+      // Jose: feedback only; scoring is handled server-side by Renier’s scoring module.
+      if (resp.is_correct === true) setStatus("Correct ✅");
+      else setStatus(`Wrong ❌ (Correct: ${resp.correct_text})`);
+
+      nextBtn.disabled = false;
+    } catch (err) {
+      console.error(err);
+      setStatus(`Submit failed: ${err.message}`);
+      // Allow retry
+      submitted = false;
+      submitBtn.disabled = false;
+    }
+  });
+
+  nextBtn.addEventListener("click", () => {
+    if (!submitted) {
+      setStatus("Submit before Next.");
+      return;
+    }
+
+    state.idx += 1;
+    saveState(state);
+
+    if (state.idx >= state.questions.length) {
       window.location.href = "./results.html";
       return;
     }
 
-    renderQuestion(state);
-  }
-
-  (async () => {
-    setText(statusEl, "Fetching question bank…");
-
-    let state = loadQuizState();
-    if (!state) {
-      const bank = await fetchQuestionBank();
-      state = buildQuizSet(bank);
-      saveQuizState(state);
-    }
-
-    renderQuestion(state);
-  })().catch((err) => {
-    console.error(err);
-    setText(statusEl, `Error: ${err.message}`);
-    setText(questionText, "Could not load questions.");
-    stopTimer();
+    renderQuestion();
   });
 
-  window.addEventListener("beforeunload", () => stopTimer());
+  (async () => {
+    try {
+      await loadQuestionsIfNeeded();
+      renderQuestion();
+    } catch (err) {
+      console.error(err);
+      setText("questionText", "Could not load questions.");
+      setStatus(`Error: ${err.message}`);
+    }
+  })();
 }
 
-// -------------------- RESULTS (results.html) --------------------
+/* -----------------------------
+   Results
+------------------------------ */
+
 function initResults() {
-  // I clear quiz state here so each new run starts with a fresh randomized set of questions.
-  clearQuizState();
+  const correctEl = $("correctCount");
+  const wrongEl = $("wrongCount");
+  const scoreEl = $("scorePoints");
+  const statusEl = $("resultsStatus");
+  const backBtn = $("backToLobbyBtn");
+
+  const state = loadState();
+
+  function setStatus(msg) {
+    if (statusEl) statusEl.textContent = msg;
+  }
+
+  if (!state) {
+    setStatus("No session state found. Go back to the Lobby.");
+    return;
+  }
+
+  const player = state.active_player || state.players?.[0] || "Player";
+
+  (async () => {
+    setStatus("Loading results from backend…");
+
+    try {
+      const data = await getJson(`/results/${encodeURIComponent(player)}`);
+
+      // Jose: backend response fields are correct/wrong/final_score
+      setText("correctCount", String(data.correct ?? "—"));
+      setText("wrongCount", String(data.wrong ?? "—"));
+      setText("scorePoints", String(data.final_score ?? "—"));
+
+      setStatus(`Results loaded for ${player}.`);
+    } catch (err) {
+      console.error(err);
+      setStatus(`Could not load results: ${err.message}`);
+    }
+  })();
+
+  backBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+
+    // Jose: I clear only run-specific state so you can start a new demo cleanly.
+    clearState();
+    window.location.href = "./index.html";
+  });
 }
 
-// -------------------- BOOT --------------------
-if (page === "lobby") initLobby();
-if (page === "quiz") initQuiz();
-if (page === "results") initResults();
+/* -----------------------------
+   Boot
+------------------------------ */
 
+(function boot() {
+  const page = document.body?.dataset?.page || "";
+
+  if (page === "lobby") initLobby();
+  if (page === "quiz") initQuiz();
+  if (page === "results") initResults();
+})();
