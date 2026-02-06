@@ -14,6 +14,15 @@ import os
 # Import to be used for selecting questions randomly each game.
 import random
 
+# Import for scoring functions
+from calculateScoring import (
+    save_score,
+    calculate_final_score,
+    calculate_how_right,
+    calculate_how_wrong,
+    clear_results
+)
+
 # ==============================================================================
 # READ (IMPORTANT)
 # ==============================================================================
@@ -26,7 +35,7 @@ import random
 #
 # ------------------------------------------------------------------------------
 # NOTES:
-# - Scoring logic is NOT implemented - that's for the scoring teammate
+# - Scoring is integrated from teammate's calculateScoring.py
 # - Category filtering is NOT implemented yet (CS, Data Science, Cyber Security, IT)
 # - Game sessions are stored in memory (resets when server restarts)
 # ==============================================================================
@@ -42,7 +51,7 @@ game_sessions = {}
 
 
 # ==============================================================
-# Fetch questions from databse
+# Fetch questions from database
 # ==============================================================
 
 def load_questions():
@@ -78,10 +87,11 @@ def submit_answer(game_id):
     
     user_answer = data.get("answer_index") # 0, 1, 2, or 3
     question_id = data.get("question_id") # "E001" and so on
+    player = data.get("player") # Player name for scoring
 
     #Find question from question bank
     question = None
-    for i in question_bank:
+    for i in game["questions"]:
         if i["id"] == question_id:
             question = i
             break
@@ -97,6 +107,10 @@ def submit_answer(game_id):
     correct_answer = question["answerIndex"]
     is_correct = (user_answer == correct_answer)
 
+    # Scoring integration
+    if player:
+        save_score(player, is_correct) # True = 1 point, False = 0 points
+
     # Return results for a proper translation for the site to read them. (Python uses "True" while website uses "true")
     return jsonify({
         "success": True,
@@ -105,6 +119,9 @@ def submit_answer(game_id):
         "correct_text": question["choices"][correct_answer]
     })
 
+# ==========================================================
+# Start Game Section
+# ==========================================================
 
 # When someone visits /start and sends data, run "handle_start_game()" which is below.
 @app.route('/start', methods=['POST'])
@@ -129,6 +146,9 @@ def handle_start_game():
             "success": False,
             "message": "At least one player is required to start the game"
         }), 400
+
+    # Clear previous results
+    clear_results()
 
     # Generation of unique game ID
     game_id = str(uuid.uuid4())
@@ -182,7 +202,31 @@ def get_game_questions(game_id):
         "total": len(game["questions"])
     })
 
-    
+
+# ===========================================
+# Get Results Section
+# ===========================================
+@app.route('/results/<player>', methods=['GET'])
+def get_results(player):
+    """Returns the final score for a player"""
+
+    try:
+        final_score = calculate_final_score(player)
+        correct = calculate_how_right(player)
+        wrong = calculate_how_wrong(player)
+
+        return jsonify({
+            "success": True,
+            "player": player,
+            "correct": correct,
+            "wrong": wrong,
+            "final_score": final_score
+        })
+    except:
+        return jsonify({
+            "success": False,
+            "message": "No results found for this player"
+        }), 404
 
 
 # ==============================================
@@ -196,3 +240,4 @@ if __name__ == '__main__':
     print("Server running on http://localhost:5000")
     # Start Flask server on port 5000 with debug mode on
     app.run(debug=True, port=5000)
+
