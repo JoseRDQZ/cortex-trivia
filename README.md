@@ -1,60 +1,106 @@
 # Cortex Trivia (Capstone)
 
-Cortex Trivia is a web-based multiplayer trivia game built by a capstone team. Players join a shared session, answer timed questions, earn points, and see final rankings.
+Cortex Trivia is a web-based multiplayer trivia game built by our Spring
+2026 Capstone team. Players create or join a shared session, answer
+timed questions, earn points, and view final rankings.
 
----
+This project maintains clear separation between frontend UI
+responsibilities, backend session logic, and scoring logic.
 
-## Current Status (Sprint 2)
-Early scaffold with a demo-focused frontend.
+  -------------------------------------------
+  CURRENT STATUS (Sprint 2 – Demo Complete)
+  -------------------------------------------
 
-The current Sprint 2 goal is to demonstrate:
-- Website page flow (Lobby → Quiz → Results → Lobby)
-- Trivia question display using real seed data
-- Clear ownership boundaries between frontend UI, quiz display logic, and scoring/session logic
+Sprint 2 successfully demonstrates a full working demo flow:
 
-Backend, scoring, and multiplayer/session wiring are intentionally incomplete at this stage and will be implemented by other team members.
+    Lobby → Quiz → Results → Lobby
 
----
+The system currently includes:
 
-## Repo Structure (Early)
-- `frontend/` — frontend UI (HTML/CSS/JS)
-  - Lobby, Quiz, and Results pages
-  - Quiz page fetches questions from seed data and displays 10 random non-repeating questions
-  - Buttons for submit/next/scoring are present but intentionally not wired
-- `backend/` — backend code owned by the backend team (Python/Java decisions may evolve)
-  - `backend/python/startGame.py` — early backend starter file (will evolve)
-- `db/` — database assets owned by the DB team
-  - `questions.seed.json` — seed question bank used by the frontend quiz demo
-- `docs/` — optional engineering notes (API shape, schema notes, decisions)
+-   Working session creation and join flow
+-   Backend session management using Flask
+-   Real question loading from seed data
+-   10 random non-repeating questions per game
+-   Submit / Next question navigation
+-   Scoring integration via calculateScoring.py
+-   Final results page displaying calculated scores
+-   Return-to-lobby functionality
+-   Fully integrated frontend and backend for demo purposes
 
----
+The demo run has been tested successfully.
 
-## How to Run the Frontend Demo (Important)
+  -------------------
+  PROJECT STRUCTURE
+  -------------------
 
-⚠️ **Do not open HTML files directly from Finder.**  
-The quiz page uses `fetch()` to load `db/questions.seed.json`, which browsers block when opening files via `file://`.
+cortex-trivia/
 
-### Option A — Terminal (Recommended)
-1. Open Terminal
-2. Navigate to the project root (the folder that contains `frontend/` and `db/`):
-   ```bash
-   cd path/to/cortex-trivia
-   ```
-3. Start a local server:
-   ```bash
-   python3 -m http.server 8000
-   ```
-4. Open the site in your browser:
-   - http://localhost:8000/frontend/index.html
+frontend/ index.html → Lobby page (create/join/start session) quiz.html
+→ Quiz gameplay page results.html → Final results page app.js → Frontend
+logic + backend integration styles.css → UI styling
 
-To stop the server, press `Ctrl + C` in the Terminal window.
+backend/python/ app.py → Flask backend (session + API endpoints)
+calculateScoring.py → Scoring logic (Renier)
 
----
+db/ questions.seed.json → Seed question bank results.json → Stored game
+results (if applicable)
 
-### Option B — VS Code (No Terminal Commands)
-1. Open the project folder in **VS Code**
-2. Install the extension **Live Server**
-3. Right-click `frontend/index.html` → **Open with Live Server**
-4. Use the browser tab that opens (the folder will be served correctly)
+  --------------------------
+  HOW TO RUN THE FULL DEMO
+  --------------------------
 
----
+1)  Start Backend (Terminal 1)
+
+From project root:
+
+    cd backend/python
+    python3 app.py
+
+You should see:
+
+    Server running on http://127.0.0.1:5000
+
+2)  Start Frontend Server (Terminal 2)
+
+From project root:
+
+    python3 -m http.server 8000
+
+3)  Open in Browser
+
+    http://localhost:8000/frontend/index.html
+
+  -----------
+  DEMO FLOW
+  -----------
+
+1.  Host creates session
+2.  Player joins using session ID
+3.  Host starts game
+4.  Quiz loads 10 random non-repeating questions
+5.  Player submits answers
+6.  Backend scoring calculates results
+7.  Results page displays rankings
+8.  Return to lobby available
+
+  ------------
+  TECH STACK
+  ------------
+
+Frontend: - HTML - CSS - Vanilla JavaScript
+
+Backend: - Python - Flask
+
+Data: - JSON seed question bank
+
+  ------------------
+  SPRINT 2 OUTCOME
+  ------------------
+
+-   Full working demo achieved
+-   Clear separation of concerns
+-   Successful integration of frontend, backend, and scoring
+-   Branch merged via pull request
+-   Demo recording confirms working state
+
+End of README
