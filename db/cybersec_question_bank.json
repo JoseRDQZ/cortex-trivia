@@ -1,0 +1,402 @@
+[
+  {
+    "id": "CY_E001",
+    "difficulty": "easy",
+    "category": "security_basics",
+    "question": "What is phishing?",
+    "choices": ["A method to physically steal a laptop", "A scam that tricks people into revealing sensitive info", "A way to speed up internet connections", "A type of computer hardware failure"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_E002",
+    "difficulty": "easy",
+    "category": "security_basics",
+    "question": "What does MFA stand for?",
+    "choices": ["Multi Factor Authentication", "Main Firewall Access", "Managed File Authorization", "Multiple Form Approval"],
+    "answerIndex": 0
+  },
+  {
+    "id": "CY_E003",
+    "difficulty": "easy",
+    "category": "network_security",
+    "question": "What is a firewall primarily used for?",
+    "choices": ["Filtering network traffic based on rules", "Recovering deleted files", "Increasing CPU speed", "Creating new user accounts automatically"],
+    "answerIndex": 0
+  },
+  {
+    "id": "CY_E004",
+    "difficulty": "easy",
+    "category": "malware",
+    "question": "What is ransomware?",
+    "choices": ["A tool used to back up data safely", "Malware that encrypts files and demands payment", "A type of antivirus update", "A secure messaging protocol"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_E005",
+    "difficulty": "easy",
+    "category": "network_security",
+    "question": "What is a VPN commonly used for?",
+    "choices": ["To make passwords shorter", "To encrypt traffic between your device and a network", "To remove viruses automatically", "To increase monitor resolution"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_E006",
+    "difficulty": "easy",
+    "category": "security_basics",
+    "question": "Why do companies install security updates (patches)?",
+    "choices": ["To change the keyboard layout", "To fix vulnerabilities and bugs", "To slow down the computer", "To disable the internet"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_E007",
+    "difficulty": "easy",
+    "category": "security_basics",
+    "question": "Which option is the best example of a strong password?",
+    "choices": ["password123", "letmein", "Summer2026", "T9q!R2z#Lm7"],
+    "answerIndex": 3
+  },
+  {
+    "id": "CY_M001",
+    "difficulty": "medium",
+    "category": "network_security",
+    "question": "What does DDoS stand for?",
+    "choices": ["Distributed Denial of Service", "Direct Data over System", "Dynamic Domain of Security", "Digital Defense on Server"],
+    "answerIndex": 0
+  },
+  {
+    "id": "CY_M002",
+    "difficulty": "medium",
+    "category": "network_security",
+    "question": "What is the key difference between an IDS and an IPS?",
+    "choices": ["IDS blocks traffic, IPS only logs", "IDS detects and alerts, IPS can block in line", "They are the same thing", "IDS encrypts traffic, IPS compresses traffic"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_M003",
+    "difficulty": "medium",
+    "category": "identity_access",
+    "question": "What does the principle of least privilege mean?",
+    "choices": ["Give users admin access to avoid support tickets", "Give users only the access they need to do their job", "Disable all accounts that log in weekly", "Allow all network traffic by default"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_M004",
+    "difficulty": "medium",
+    "category": "cryptography",
+    "question": "Why do systems hash passwords instead of storing them in plaintext?",
+    "choices": ["To make passwords reversible later", "To store the original password safely", "To verify passwords without storing the original text", "To increase internet speed"],
+    "answerIndex": 2
+  },
+  {
+    "id": "CY_M005",
+    "difficulty": "medium",
+    "category": "cryptography",
+    "question": "What is a salt in password storage?",
+    "choices": ["A random value added before hashing to reduce repeated hash patterns", "A method to encrypt Wi Fi signals", "A tool to block phishing emails", "A type of malware that steals credentials"],
+    "answerIndex": 0
+  },
+  {
+    "id": "CY_M006",
+    "difficulty": "medium",
+    "category": "incident_response",
+    "question": "What is a SIEM used for?",
+    "choices": ["Collecting and correlating logs to detect security events", "Physically repairing hard drives", "Replacing user passwords automatically", "Blocking all external web traffic"],
+    "answerIndex": 0
+  },
+  {
+    "id": "CY_M007",
+    "difficulty": "medium",
+    "category": "web_security",
+    "question": "What is TLS most closely related to?",
+    "choices": ["Encrypting data in transit for secure connections like HTTPS", "Deleting malware from a computer", "Creating database backups", "Overclocking a CPU"],
+    "answerIndex": 0
+  },
+  {
+    "id": "CY_H001",
+    "difficulty": "hard",
+    "category": "web_security",
+    "question": "What is SQL injection?",
+    "choices": ["A method to speed up SQL queries", "An attack that manipulates database queries using untrusted input", "A tool for encrypting SQL tables", "A safe way to validate user input"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_H002",
+    "difficulty": "hard",
+    "category": "web_security",
+    "question": "What is cross site scripting (XSS)?",
+    "choices": ["An attack where malicious scripts run in a user browser through a trusted site", "A firewall feature that blocks ports", "A database backup strategy", "A method to compress web pages"],
+    "answerIndex": 0
+  },
+  {
+    "id": "CY_H003",
+    "difficulty": "hard",
+    "category": "cryptography",
+    "question": "In public key cryptography, which key verifies a digital signature made by a person?",
+    "choices": ["The person public key", "The person private key", "A shared symmetric key", "A random session key stored on the server"],
+    "answerIndex": 0
+  },
+  {
+    "id": "CY_H004",
+    "difficulty": "hard",
+    "category": "cryptography",
+    "question": "What is the main job of a Certificate Authority (CA) in PKI?",
+    "choices": ["To store passwords in plaintext", "To issue and sign certificates that bind identities to public keys", "To block all phishing emails automatically", "To encrypt every file on a computer"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_H005",
+    "difficulty": "hard",
+    "category": "security_basics",
+    "question": "What does ASLR primarily do?",
+    "choices": ["Encrypts files on disk", "Randomizes memory addresses to make exploitation harder", "Blocks spam in email inboxes", "Detects weak passwords automatically"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_H006",
+    "difficulty": "hard",
+    "category": "incident_response",
+    "question": "In incident response, what does containment focus on?",
+    "choices": ["Writing a final report for management", "Limiting spread by isolating affected systems", "Deleting all logs immediately", "Upgrading all hardware at once"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_H007",
+    "difficulty": "hard",
+    "category": "security_basics",
+    "question": "Which statement best matches a Zero Trust security approach?",
+    "choices": ["Trust internal users by default", "Never trust, always verify, and continuously validate access", "Allow all traffic inside the network without checks", "Only use security controls on weekends"],
+    "answerIndex": 1
+  },
+  {
+  "id": "CY_E008",
+  "difficulty": "easy",
+  "category": "security_basics",
+  "question": "What is malware?",
+  "choices": ["Software designed to protect your computer", "Malicious software designed to harm or exploit systems", "A type of secure network cable", "A browser setting that blocks ads"],
+  "answerIndex": 1
+  },
+  {
+    "id": "CY_E009",
+    "difficulty": "easy",
+    "category": "security_basics",
+    "question": "What is social engineering in cybersecurity?",
+    "choices": ["Building robots for security", "Tricking people to reveal information or take unsafe actions", "Encrypting files on a server", "Scanning a network for faster Wi Fi"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_E010",
+    "difficulty": "easy",
+    "category": "security_basics",
+    "question": "What is the safest action if you receive an unexpected email attachment from an unknown sender?",
+    "choices": ["Open it to see what it is", "Forward it to everyone to warn them", "Delete it or report it as suspicious", "Reply asking what it contains"],
+    "answerIndex": 2
+  },
+  {
+    "id": "CY_E011",
+    "difficulty": "easy",
+    "category": "security_basics",
+    "question": "What does https at the start of a website address usually indicate?",
+    "choices": ["The site is always safe from hacking", "The connection uses encryption for data in transit", "The site loads faster than http", "The site is hosted on a private server only"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_E012",
+    "difficulty": "easy",
+    "category": "security_basics",
+    "question": "What is a common sign of a phishing message?",
+    "choices": ["It uses perfect grammar", "It asks for urgent action like confirming a password or payment", "It contains a long legal disclaimer", "It comes only from a phone call"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_E013",
+    "difficulty": "easy",
+    "category": "identity_access",
+    "question": "What is a password manager primarily used for?",
+    "choices": ["To share passwords publicly", "To store and generate strong passwords securely", "To disable two factor authentication", "To remove viruses from a computer"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_E014",
+    "difficulty": "easy",
+    "category": "security_basics",
+    "question": "What does it mean to back up data?",
+    "choices": ["Delete old files permanently", "Make a copy of data so it can be restored later", "Encrypt data so no one can read it", "Move files into the recycle bin"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_E015",
+    "difficulty": "easy",
+    "category": "security_basics",
+    "question": "Which action most reduces the chance of account takeover?",
+    "choices": ["Using the same password everywhere", "Using multi factor authentication", "Turning off updates", "Posting your password hints online"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_E016",
+    "difficulty": "easy",
+    "category": "network_security",
+    "question": "Why can public Wi Fi be risky?",
+    "choices": ["It makes your laptop heavier", "Attackers may intercept or monitor traffic on insecure networks", "It prevents apps from updating", "It automatically installs antivirus"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_E017",
+    "difficulty": "easy",
+    "category": "security_basics",
+    "question": "What is a software vulnerability?",
+    "choices": ["A feature that improves performance", "A weakness that can be exploited to compromise a system", "A type of strong password", "A safe backup copy of files"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_M008",
+    "difficulty": "medium",
+    "category": "security_basics",
+    "question": "In the CIA triad, what does the A stand for?",
+    "choices": ["Authentication", "Availability", "Anonymity", "Authorization"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_M009",
+    "difficulty": "medium",
+    "category": "identity_access",
+    "question": "What is password spraying?",
+    "choices": ["Trying many passwords on one account quickly", "Trying a few common passwords across many accounts", "Encrypting passwords with a salt", "Storing passwords in a text file"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_M010",
+    "difficulty": "medium",
+    "category": "identity_access",
+    "question": "What is the main security benefit of using unique passwords for each site?",
+    "choices": ["It makes logins slower", "It prevents a breach on one site from compromising other accounts", "It disables phishing attempts automatically", "It replaces the need for MFA"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_M011",
+    "difficulty": "medium",
+    "category": "web_security",
+    "question": "What is a CSRF attack attempting to do?",
+    "choices": ["Force a user browser to perform an unwanted action while logged in", "Run malicious scripts by injecting code into a web page", "Break encryption by guessing private keys", "Scan ports on a router automatically"],
+    "answerIndex": 0
+  },
+  {
+    "id": "CY_M012",
+    "difficulty": "medium",
+    "category": "network_security",
+    "question": "What is a man in the middle attack?",
+    "choices": ["An attacker blocks all traffic to a server", "An attacker secretly intercepts and possibly alters communication between two parties", "An attacker deletes system logs", "An attacker installs updates on your computer"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_M013",
+    "difficulty": "medium",
+    "category": "malware",
+    "question": "What is the difference between a worm and a virus?",
+    "choices": ["A worm can spread on its own, a virus often needs a host file or user action", "A virus is always harmless, a worm is always harmful", "A worm only affects phones, a virus only affects computers", "They are identical terms"],
+    "answerIndex": 0
+  },
+  {
+    "id": "CY_M014",
+    "difficulty": "medium",
+    "category": "incident_response",
+    "question": "What is an IOC in incident response?",
+    "choices": ["A type of firewall rule", "Indicator of compromise, evidence that a system may be breached", "Internet operating certificate", "Internal office credential"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_M015",
+    "difficulty": "medium",
+    "category": "security_basics",
+    "question": "What is the main purpose of an access control list (ACL)?",
+    "choices": ["To speed up a database query", "To define who can access a resource and what they can do", "To encrypt a hard drive", "To create backups automatically"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_M016",
+    "difficulty": "medium",
+    "category": "cloud_security",
+    "question": "In cloud security, what is a common cause of data exposure?",
+    "choices": ["Using a laptop without a mouse", "Misconfigured storage permissions, like a public bucket", "Upgrading the CPU", "Using a wired keyboard"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_M017",
+    "difficulty": "medium",
+    "category": "security_basics",
+    "question": "What is the purpose of logging in security?",
+    "choices": ["To make computers run faster", "To record events for monitoring, investigation, and detection", "To replace encryption", "To prevent all attacks automatically"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_H008",
+    "difficulty": "hard",
+    "category": "web_security",
+    "question": "What is SSRF, server side request forgery?",
+    "choices": ["An attack that forces a server to make unintended requests to internal or external resources", "A technique to encrypt requests inside a browser", "A method for password hashing", "A firewall rule that blocks outbound traffic"],
+    "answerIndex": 0
+  },
+  {
+    "id": "CY_H009",
+    "difficulty": "hard",
+    "category": "web_security",
+    "question": "What is RCE, remote code execution?",
+    "choices": ["A secure way to run programs on your own computer", "A vulnerability that lets an attacker run code on a target system from a distance", "A method to validate user input in a form", "A protocol for encrypted email"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_H010",
+    "difficulty": "hard",
+    "category": "cryptography",
+    "question": "What does perfect forward secrecy provide?",
+    "choices": ["Past sessions remain secure even if a long term key is later compromised", "Passwords can be recovered if forgotten", "Traffic is always faster than without encryption", "Public keys can be hidden from everyone"],
+    "answerIndex": 0
+  },
+  {
+    "id": "CY_H011",
+    "difficulty": "hard",
+    "category": "cryptography",
+    "question": "Which is a correct pairing for asymmetric cryptography?",
+    "choices": ["One shared key for encryption and decryption", "A public key and a private key with different roles", "A password and a username used as keys", "Two identical private keys stored on both devices"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_H012",
+    "difficulty": "hard",
+    "category": "incident_response",
+    "question": "What is lateral movement in an attack?",
+    "choices": ["Installing updates to multiple computers quickly", "Moving from one compromised system to other systems inside the network", "Encrypting a hard drive for backup", "Blocking network traffic at the router"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_H013",
+    "difficulty": "hard",
+    "category": "network_security",
+    "question": "What is DNS cache poisoning trying to achieve?",
+    "choices": ["Prevent DNS from working entirely", "Trick a resolver into returning a wrong IP address for a domain", "Encrypt DNS traffic end to end", "Increase DNS lookup speed for all users"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_H014",
+    "difficulty": "hard",
+    "category": "security_basics",
+    "question": "What does CVSS primarily provide?",
+    "choices": ["A way to encrypt passwords", "A standardized score to rate the severity of vulnerabilities", "A protocol for secure web browsing", "A tool to block phishing emails"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_H015",
+    "difficulty": "hard",
+    "category": "identity_access",
+    "question": "What is privilege escalation?",
+    "choices": ["Changing your password regularly", "Gaining higher access rights than intended on a system", "Encrypting a file with AES", "Blocking traffic to a server"],
+    "answerIndex": 1
+  },
+  {
+    "id": "CY_H016",
+    "difficulty": "hard",
+    "category": "network_security",
+    "question": "What is the main purpose of network segmentation?",
+    "choices": ["To make internet faster for everyone", "To limit attacker movement by isolating parts of the network", "To remove the need for firewalls", "To store passwords securely"],
+    "answerIndex": 1
+  }
+]
