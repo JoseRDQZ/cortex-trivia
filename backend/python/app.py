@@ -54,17 +54,44 @@ game_sessions = {}
 # Fetch questions from database
 # ==============================================================
 
-def load_questions():
-    # Reads and loads questions from questions.seed.json
-    current_folder = os.path.dirname(__file__)
-    json_path = os.path.join(current_folder, '..', '..', 'db', 'questions.seed.json')
+# Question bank files live in the /db folder (two levels above this file)
+QUESTION_BANK_FILES = {
+    "cs": "cs_question_bank.json",
+    "cybersec": "cybersec_question_bank.json",
+}
 
-    with open(json_path, 'r') as file:
-        return json.load(file)
+DEFAULT_BANK_ID = "cs"
+_question_bank_cache = {}
 
-# Load questions at start of server.
-question_bank = load_questions()
+def load_questions_from_db(filename):
+    backend_dir = os.path.dirname(__file__)
+    json_path = os.path.join(backend_dir, "..", "..", "db", filename)
 
+    with open(json_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def get_question_bank(bank_id):
+    bank_id = (bank_id or DEFAULT_BANK_ID).lower().strip()
+
+    if bank_id not in QUESTION_BANK_FILES:
+        bank_id = DEFAULT_BANK_ID
+
+    if bank_id not in _question_bank_cache:
+        _question_bank_cache[bank_id] = load_questions_from_db(QUESTION_BANK_FILES[bank_id])
+
+    return bank_id, _question_bank_cache[bank_id]
+
+# Load default bank at startup so the server fails fast if file names are wrong
+_default_bank_id, question_bank = get_question_bank(DEFAULT_BANK_ID)
+print(f"Default bank loaded: {_default_bank_id} ({len(question_bank)} questions)")
+
+@app.route("/question_banks", methods=["GET"])
+def question_banks():
+    banks = [
+        {"id": "cs", "label": "Computer Science"},
+        {"id": "cybersec", "label": "Cybersecurity"},
+    ]
+    return jsonify({"default": DEFAULT_BANK_ID, "banks": banks})
 
 # ====================================================================
 # Manage answer validation (Checks if the answer selected is correct
@@ -130,6 +157,8 @@ def handle_start_game():
     
     # Get the game settings sent from the website
     data = request.get_json() or {}
+    bank_request = data.get("bank_id")  # "cs" or "cybersec"
+    bank_id, active_bank = get_question_bank(bank_request)
     
     session_code = data.get('session_code')
     players = data.get('players', [])
@@ -154,17 +183,16 @@ def handle_start_game():
     game_id = str(uuid.uuid4())
 
     # Selection of ten random questions
-    num_questions = min(10, len(question_bank))
-    selected_questions = random.sample(question_bank, num_questions)
+    num_questions = min(10, len(active_bank))
+    selected_questions = random.sample(active_bank, num_questions)
 
     # Store game session
     game_sessions[game_id] = {
-        "game_id": game_id,
-        "session_code": session_code,
-        "players": players,
-        "questions": selected_questions,
-        "current_question_index": 0,
-        "status": "active"
+    "game_id": game_id,
+    "session_code": session_code,
+    "players": players,
+    "bank_id": bank_id,
+    "questions": selected_questions,
     }
 
     print(f"Game started: {game_id} with {len(players)} players(s)")

@@ -88,6 +88,7 @@ function initLobby() {
 
   const leaveBtn = $("leaveBtn");
   const startBtn = $("startBtn");
+  const bankSelect = $("bankSelect");
 
   const sessionCodeEl = $("sessionCode");
   const playerListEl = $("playerList");
@@ -101,6 +102,9 @@ function initLobby() {
       players: [],
       // Jose: “active_player” is who this browser window represents for submits/results.
       active_player: "",
+      // Selected question bank id, sent to the backend when starting the game.
+      // Must match backend ids in QUESTION_BANK_FILES, for example "cs", "cybersec".
+      bank_id: "cs",
       game_id: "",
       // Jose: cache questions on the client only for UI navigation.
       questions: [],
@@ -118,11 +122,19 @@ function initLobby() {
   function render() {
     setText("sessionCode", state.session_code || "—");
     setText("playerList", state.players.length ? state.players.join(", ") : "—");
+    if (bankSelect) bankSelect.value = state.bank_id || "cs"; // Keep the dropdown showing the saved selection (so refresh does not reset it)
 
     // Jose: I allow clicking everything; status text guides the user.
     if (!state.session_code) setStatus("Create or Join a session to begin.");
     else setStatus(`Session ready (${state.session_code}). Press Start Game to create backend game.`);
   }
+
+    // Diego: Keep the saved state in sync with the dropdown selection
+  bankSelect?.addEventListener("change", () => {
+    state.bank_id = bankSelect.value || "cs";
+    persist();
+    setStatus(`Category selected: ${bankSelect.options[bankSelect.selectedIndex].text}`);
+  });
 
   // Create
   createBtn?.addEventListener("click", (e) => {
@@ -181,6 +193,7 @@ function initLobby() {
       session_code: "",
       players: [],
       active_player: "",
+      bank_id: "cs",
       game_id: "",
       questions: [],
       idx: 0,
@@ -209,6 +222,7 @@ function initLobby() {
       const data = await postJson("/start", {
         session_code: state.session_code,
         players: state.players,
+        bank_id: state.bank_id, // Diego: send the selected question bank to the backend
       });
 
       if (!data.game_id) {
