@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Cortex Trivia — Player</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="container header__inner">
+      <h1 class="brand">Cortex Trivia</h1>
+      <div class="row">
+        <span class="pill">Player</span>
+        <a class="pill" href="./index.html">Lobby</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <div>
+          <div class="big">Player Lobby</div>
+          <div class="muted">You’re joined — wait for the host to start.</div>
+        </div>
+        <button id="playerBackBtn" class="btn danger">Back to Lobby</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="panel">
+        <div class="row">
+          <div>
+            <div class="label">SESSION CODE</div>
+            <div id="playerSessionCode" class="mono" style="font-size:18px;">—</div>
+          </div>
+
+          <div style="margin-left:auto;">
+            <div class="label">PLAYER</div>
+            <div id="playerName" class="mono">—</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="row right">
+          <button id="playerCheckBtn" class="btn primary">Check Game Status</button>
+          <button id="playerOpenQuizBtn" class="btn primary" disabled>Open Quiz</button>
+        </div>
+
+        <div id="playerStatus" class="status">Waiting…</div>
+      </div>
+    </div>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
+
