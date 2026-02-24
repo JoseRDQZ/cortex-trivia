@@ -1,0 +1,404 @@
+[
+  {
+    "id": "IT_E001",
+    "difficulty": "easy",
+    "category": "hardware",
+    "question": "What does RAM stand for?",
+    "choices": ["Random Access Memory", "Rapid Application Module", "Read Access Mode", "Remote Allocation Memory"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E002",
+    "difficulty": "easy",
+    "category": "hardware",
+    "question": "Which device is primarily used to connect multiple wired devices in a local network?",
+    "choices": ["Switch", "Monitor", "Printer", "Modem"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E003",
+    "difficulty": "easy",
+    "category": "networking",
+    "question": "What does an IP address identify on a network?",
+    "choices": ["A device or interface", "A keyboard layout", "A file type", "A screen resolution"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E004",
+    "difficulty": "easy",
+    "category": "networking",
+    "question": "Which device typically connects a home network to the internet?",
+    "choices": ["Router", "USB hub", "Webcam", "Speaker"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E005",
+    "difficulty": "easy",
+    "category": "it_support",
+    "question": "What is the first step you should try for many simple computer issues?",
+    "choices": ["Restart the device", "Delete system files", "Disable the firewall", "Format the drive"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E006",
+    "difficulty": "easy",
+    "category": "os",
+    "question": "Which operating system is developed by Microsoft?",
+    "choices": ["Windows", "Linux", "macOS", "Android"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E007",
+    "difficulty": "easy",
+    "category": "storage",
+    "question": "Which unit is commonly used to measure file size?",
+    "choices": ["Byte", "Volt", "Ampere", "Hertz"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E008",
+    "difficulty": "easy",
+    "category": "security",
+    "question": "What does MFA stand for in account security?",
+    "choices": ["Multi Factor Authentication", "Main File Access", "Managed Firewall Account", "Machine Function Authorization"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E009",
+    "difficulty": "easy",
+    "category": "security",
+    "question": "What is phishing?",
+    "choices": ["Tricking users into revealing sensitive information", "A method of compressing files", "A type of computer monitor", "A wireless charging standard"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E010",
+    "difficulty": "easy",
+    "category": "networking",
+    "question": "What does Wi Fi allow you to do?",
+    "choices": ["Connect to a network wirelessly", "Increase monitor brightness", "Cool down the CPU", "Encrypt files automatically"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E011",
+    "difficulty": "easy",
+    "category": "software",
+    "question": "What is a web browser used for?",
+    "choices": ["Accessing websites on the internet", "Printing documents only", "Editing video files only", "Creating physical backups"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E012",
+    "difficulty": "easy",
+    "category": "hardware",
+    "question": "Which part of a computer is often called the brain of the computer?",
+    "choices": ["CPU", "Mouse", "Power supply", "Case fan"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E013",
+    "difficulty": "easy",
+    "category": "it_support",
+    "question": "What does it mean to install a software update?",
+    "choices": ["Apply newer fixes or features to a program", "Delete the program permanently", "Only change the desktop wallpaper", "Turn off the internet connection"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E014",
+    "difficulty": "easy",
+    "category": "security",
+    "question": "Which is generally the safest type of password?",
+    "choices": ["A long unique passphrase", "Your first name", "12345678", "password"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E015",
+    "difficulty": "easy",
+    "category": "email",
+    "question": "What does spam usually refer to in email?",
+    "choices": ["Unwanted or junk messages", "Encrypted messages only", "Messages from your manager", "System updates"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E016",
+    "difficulty": "easy",
+    "category": "storage",
+    "question": "What is the main purpose of a backup?",
+    "choices": ["Restore data if the original is lost or damaged", "Make the computer run faster", "Replace the operating system", "Increase screen size"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_E017",
+    "difficulty": "easy",
+    "category": "networking",
+    "question": "What does DNS do?",
+    "choices": ["Translates domain names into IP addresses", "Encrypts Wi Fi signals", "Physically routes cables", "Deletes browser history"],
+    "answerIndex": 0
+  },
+
+  {
+    "id": "IT_M001",
+    "difficulty": "medium",
+    "category": "networking",
+    "question": "Which service automatically assigns IP addresses to devices on a network?",
+    "choices": ["DHCP", "DNS", "NTP", "SMTP"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M002",
+    "difficulty": "medium",
+    "category": "networking",
+    "question": "What is the default port number for HTTPS?",
+    "choices": ["443", "80", "22", "53"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M003",
+    "difficulty": "medium",
+    "category": "networking",
+    "question": "What is the default port number for SSH?",
+    "choices": ["22", "443", "3389", "110"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M004",
+    "difficulty": "medium",
+    "category": "networking",
+    "question": "What is the default port number for DNS queries?",
+    "choices": ["53", "25", "67", "139"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M005",
+    "difficulty": "medium",
+    "category": "networking",
+    "question": "Which protocol is connection oriented and guarantees delivery?",
+    "choices": ["TCP", "UDP", "ICMP", "ARP"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M006",
+    "difficulty": "medium",
+    "category": "networking",
+    "question": "Which protocol is commonly used for remote desktop access on Windows systems?",
+    "choices": ["RDP", "FTP", "SNMP", "POP3"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M007",
+    "difficulty": "medium",
+    "category": "storage",
+    "question": "What does RAID 1 do?",
+    "choices": ["Mirrors data across drives", "Stripes data with no redundancy", "Stores parity across three drives only", "Compresses files automatically"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M008",
+    "difficulty": "medium",
+    "category": "storage",
+    "question": "What does RAID 0 do?",
+    "choices": ["Stripes data for speed with no redundancy", "Mirrors data across drives", "Encrypts data at rest", "Creates snapshots automatically"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M009",
+    "difficulty": "medium",
+    "category": "virtualization",
+    "question": "What is a hypervisor used for?",
+    "choices": ["Creating and running virtual machines", "Cleaning malware from disks", "Replacing a router", "Editing source code"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M010",
+    "difficulty": "medium",
+    "category": "directory_services",
+    "question": "What is Active Directory mainly used for in many organizations?",
+    "choices": ["Centralized user and computer management", "Video rendering", "Wireless encryption only", "Database backups only"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M011",
+    "difficulty": "medium",
+    "category": "security",
+    "question": "What is the main purpose of a firewall?",
+    "choices": ["Filter network traffic based on rules", "Increase internet speed", "Repair corrupted files", "Improve monitor color accuracy"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M012",
+    "difficulty": "medium",
+    "category": "cloud",
+    "question": "Which is an example of a cloud service model that provides virtual machines?",
+    "choices": ["IaaS", "SaaS", "PaaS", "DaaS"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M013",
+    "difficulty": "medium",
+    "category": "cloud",
+    "question": "Which is an example of SaaS?",
+    "choices": ["Web based email service", "A physical server rack", "A network switch", "A local disk partition"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M014",
+    "difficulty": "medium",
+    "category": "os",
+    "question": "What is the purpose of the operating system kernel?",
+    "choices": ["Manage hardware resources and system calls", "Draw web pages", "Create spreadsheet formulas", "Generate Wi Fi signals"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M015",
+    "difficulty": "medium",
+    "category": "it_support",
+    "question": "If a user cannot access a website but other sites work, what is a likely first check?",
+    "choices": ["Confirm the website is down or blocked by DNS", "Replace the motherboard", "Increase RAM", "Disable the monitor"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M016",
+    "difficulty": "medium",
+    "category": "networking",
+    "question": "What is a VLAN used for?",
+    "choices": ["Logically segmenting a network", "Encrypting hard drives", "Speeding up CPU clocks", "Compressing images"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_M017",
+    "difficulty": "medium",
+    "category": "security",
+    "question": "What is the best practice for handling unexpected password reset emails you did not request?",
+    "choices": ["Do not click links, check account activity, and change password from the official site", "Reply with your password to confirm identity", "Forward it to everyone in the company", "Ignore it and turn off MFA"],
+    "answerIndex": 0
+  },
+
+  {
+    "id": "IT_H001",
+    "difficulty": "hard",
+    "category": "security",
+    "question": "What is the main purpose of Kerberos in many enterprise environments?",
+    "choices": ["Ticket based authentication", "Email encryption only", "File compression", "Network address translation"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H002",
+    "difficulty": "hard",
+    "category": "backup",
+    "question": "What does RPO represent in disaster recovery planning?",
+    "choices": ["Maximum acceptable data loss measured in time", "Maximum acceptable downtime measured in time", "Required password length", "A firewall rule priority order"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H003",
+    "difficulty": "hard",
+    "category": "backup",
+    "question": "What does RTO represent in disaster recovery planning?",
+    "choices": ["Maximum acceptable time to restore service", "Maximum acceptable data loss measured in time", "A method for compressing backups", "A type of network cable standard"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H004",
+    "difficulty": "hard",
+    "category": "storage",
+    "question": "Which RAID level commonly provides striping with distributed parity and can survive one drive failure?",
+    "choices": ["RAID 5", "RAID 0", "RAID 1", "JBOD"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H005",
+    "difficulty": "hard",
+    "category": "networking",
+    "question": "What does NAT typically do on a home router?",
+    "choices": ["Translates private IP addresses to a public IP address", "Encrypts DNS records", "Assigns MAC addresses", "Balances CPU load across cores"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H006",
+    "difficulty": "hard",
+    "category": "networking",
+    "question": "Which protocol is most commonly used to securely transfer files over SSH?",
+    "choices": ["SFTP", "TFTP", "Telnet", "HTTP"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H007",
+    "difficulty": "hard",
+    "category": "security",
+    "question": "What is the main security benefit of least privilege?",
+    "choices": ["Limits damage if an account is compromised", "Makes passwords shorter", "Eliminates the need for backups", "Automatically prevents phishing"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H008",
+    "difficulty": "hard",
+    "category": "directory_services",
+    "question": "In Active Directory, what is a Group Policy Object (GPO) used for?",
+    "choices": ["Applying centralized configuration and security settings", "Storing encrypted backups", "Creating VLANs automatically", "Replacing a domain controller"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H009",
+    "difficulty": "hard",
+    "category": "networking",
+    "question": "What is the main purpose of SNMP in IT operations?",
+    "choices": ["Monitoring and managing network devices", "Secure remote login", "Encrypting web traffic", "Transferring email messages"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H010",
+    "difficulty": "hard",
+    "category": "networking",
+    "question": "What does a load balancer primarily do?",
+    "choices": ["Distributes traffic across multiple servers", "Encrypts all stored files", "Assigns MAC addresses to devices", "Replaces DNS servers"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H011",
+    "difficulty": "hard",
+    "category": "cloud",
+    "question": "What is a common cause of cloud data exposure in storage services?",
+    "choices": ["Misconfigured permissions making a bucket public", "Using a newer CPU generation", "Turning on MFA", "Enabling automatic backups"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H012",
+    "difficulty": "hard",
+    "category": "email",
+    "question": "Which email authentication record helps receiving servers verify an email was sent from an authorized mail server for the domain?",
+    "choices": ["SPF", "DHCP", "NTP", "FTP"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H013",
+    "difficulty": "hard",
+    "category": "email",
+    "question": "Which email authentication method uses cryptographic signatures to validate messages have not been modified in transit?",
+    "choices": ["DKIM", "POP3", "IMAP", "Telnet"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H014",
+    "difficulty": "hard",
+    "category": "security",
+    "question": "What is the main purpose of TLS in web traffic?",
+    "choices": ["Encrypt data in transit and authenticate endpoints", "Compress web pages for speed", "Assign IP addresses", "Prevent all malware infections"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H015",
+    "difficulty": "hard",
+    "category": "networking",
+    "question": "Which routing protocol is commonly used between large networks on the internet?",
+    "choices": ["BGP", "ARP", "DHCP", "SMB"],
+    "answerIndex": 0
+  },
+  {
+    "id": "IT_H016",
+    "difficulty": "hard",
+    "category": "virtualization",
+    "question": "What is a snapshot in virtualization primarily used for?",
+    "choices": ["A point in time capture of a virtual machine state for rollback", "A faster type of CPU cache", "A replacement for DNS", "A method to assign IP addresses automatically"],
+    "answerIndex": 0
+  }
+]
