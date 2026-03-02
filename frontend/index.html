@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
@@ -13,8 +14,8 @@
     <div class="container header__inner">
       <h1 class="brand">Cortex Trivia</h1>
       <div class="row">
-        <span class="pill">Sprint 2 Demo</span>
-        <span class="pill">Integrated Flow</span>
+        <span class="pill">Sprint 3</span>
+        <span class="pill">Host / Player Split</span>
       </div>
     </div>
   </header>
@@ -24,30 +25,40 @@
       <div class="card">
         <h2>Session Lobby</h2>
         <p class="muted">
-          <!-- JOSE INTEGRATION: For demo readiness, I wired the lobby buttons to Daniel’s backend. -->
-          For the demo, I wired Create/Join/Start to the backend so we can test end-to-end.
+          <!-- JOSE INTEGRATION: Sprint 3 routing change -->
+          Sprint 3 update: Create sends the host to <span class="mono">host.html</span>. Join sends the player to
+          <span class="mono">player.html</span>.
         </p>
 
         <div class="panel">
           <h3>Create Session</h3>
+
           <label class="label" for="createName">Host name</label>
-          <input class="input" id="createName" placeholder="Jose" maxlength="16" />
+          <input class="input" id="createName" placeholder="Host" maxlength="16" />
+
+          <label class="label" for="bankSelect">Category</label>
+          <select class="input" id="bankSelect">
+            <option value="cs">Computer Science</option>
+            <option value="cybersec">Cybersecurity</option>
+          </select>
 
           <div class="row right">
-            <!-- JOSE INTEGRATION: enabled for full integration -->
+            <!-- JOSE INTEGRATION: enabled + routed to host.html -->
             <button class="btn primary" id="createBtn">Create</button>
           </div>
         </div>
 
         <div class="panel">
           <h3>Join Session</h3>
+
           <label class="label" for="joinCode">Session code</label>
           <input class="input" id="joinCode" placeholder="ABC123" maxlength="10" />
+
           <label class="label" for="joinName">Player name</label>
-          <input class="input" id="joinName" placeholder="Jose" maxlength="16" />
+          <input class="input" id="joinName" placeholder="Player" maxlength="16" />
 
           <div class="row right">
-            <!-- JOSE INTEGRATION: enabled for full integration -->
+            <!-- JOSE INTEGRATION: enabled + routed to player.html -->
             <button class="btn primary" id="joinBtn">Join</button>
           </div>
         </div>
@@ -61,17 +72,9 @@
               <div class="mono" id="sessionCode">—</div>
             </div>
             <div>
-              <div class="label muted">Players</div>
+              <div class="label muted">Players (local demo)</div>
               <div class="mono" id="playerList">—</div>
             </div>
-          </div>
-
-          <div class="row right">
-            <!-- JOSE INTEGRATION: enabled for full integration -->
-            <button class="btn" id="leaveBtn">Leave</button>
-
-            <!-- JOSE INTEGRATION: Start Game calls backend /start and navigates to quiz.html -->
-            <button class="btn primary" id="startBtn">Start Game</button>
           </div>
 
           <div class="status" id="statusText">Ready.</div>
@@ -81,14 +84,14 @@
       <div class="card">
         <h2>Demo Notes</h2>
         <p class="muted">
-          Start Game creates a backend game and stores <span class="mono">game_id</span>. The quiz page then fetches
-          questions from <span class="mono">/game/&lt;game_id&gt;/questions</span>.
+          Host flow: <span class="mono">index → host.html → Start Game → quiz.html → results.html</span><br />
+          Player flow: <span class="mono">index → player.html</span>
         </p>
         <div class="panel">
           <ul class="muted">
-            <li>Quiz is 10 questions</li>
-            <li>Submit posts to backend for validation + scoring updates</li>
-            <li>Results pulls from backend results endpoint</li>
+            <li>Category is selected before session creation</li>
+            <li>Host owns starting the game</li>
+            <li>Player page is for joining + waiting / status (Sprint 3)</li>
           </ul>
         </div>
       </div>
@@ -97,4 +100,6 @@
 
   <script src="./app.js"></script>
 </body>
+
 </html>
+

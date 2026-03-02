@@ -32,6 +32,12 @@ body{ margin:0; background:var(--bg); color:var(--text); }
 .label{ display:block; margin:10px 0 6px; font-size:12px; text-transform:uppercase; letter-spacing:.3px; }
 .input{ width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--border); background:transparent; color:var(--text); }
 
+/* Fix dropdown list readability (Windows shows a white dropdown list) */
+#bankSelect option {
+  color: #111;
+  background-color: #fff;
+}
+
 .btn{ padding:10px 12px; border-radius:12px; border:1px solid var(--border); background:transparent; color:var(--text); cursor:pointer; }
 .btn:disabled{ opacity:.45; cursor:not-allowed; }
 
