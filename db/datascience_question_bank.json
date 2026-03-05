@@ -1,0 +1,404 @@
+[
+  {
+    "id": "DS_E001",
+    "difficulty": "easy",
+    "category": "basics",
+    "question": "What is the main goal of data science?",
+    "choices": ["Extract useful insights from data", "Replace all software with AI", "Only store data in databases", "Make computers run faster"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E002",
+    "difficulty": "easy",
+    "category": "basics",
+    "question": "Which of the following is an example of data?",
+    "choices": ["A list of temperatures recorded each day", "A computer mouse", "A Wi Fi router", "A keyboard shortcut"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E003",
+    "difficulty": "easy",
+    "category": "statistics",
+    "question": "What is the mean of a set of numbers?",
+    "choices": ["The average", "The largest value", "The most frequent value", "The middle value"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E004",
+    "difficulty": "easy",
+    "category": "statistics",
+    "question": "What is the median of a set of numbers?",
+    "choices": ["The middle value after sorting", "The average", "The smallest value", "The sum of all values"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E005",
+    "difficulty": "easy",
+    "category": "statistics",
+    "question": "Which measure describes the most frequent value in a dataset?",
+    "choices": ["Mode", "Mean", "Median", "Range"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E006",
+    "difficulty": "easy",
+    "category": "data_types",
+    "question": "Which is an example of a categorical variable?",
+    "choices": ["Favorite color", "Height in centimeters", "Age in years", "Temperature in Celsius"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E007",
+    "difficulty": "easy",
+    "category": "data_types",
+    "question": "Which is an example of a numerical variable?",
+    "choices": ["Number of website visits", "Type of car", "Country name", "Email provider"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E008",
+    "difficulty": "easy",
+    "category": "data_cleaning",
+    "question": "What is a missing value in a dataset?",
+    "choices": ["A value that is not recorded for a row", "A value that is always zero", "A value that is too large", "A value that is encrypted"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E009",
+    "difficulty": "easy",
+    "category": "data_visualization",
+    "question": "Which chart is commonly used to show trends over time?",
+    "choices": ["Line chart", "Pie chart", "Scatter plot", "Heatmap"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E010",
+    "difficulty": "easy",
+    "category": "data_visualization",
+    "question": "Which chart is commonly used to compare categories?",
+    "choices": ["Bar chart", "Line chart", "Box plot", "Contour plot"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E011",
+    "difficulty": "easy",
+    "category": "ml_basics",
+    "question": "What does ML stand for?",
+    "choices": ["Machine Learning", "Memory Load", "Matrix Logic", "Media Library"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E012",
+    "difficulty": "easy",
+    "category": "ml_basics",
+    "question": "Which is a common task for supervised learning?",
+    "choices": ["Predicting house prices from past examples", "Grouping similar customers without labels", "Compressing files into zip format", "Encrypting passwords"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E013",
+    "difficulty": "easy",
+    "category": "ml_basics",
+    "question": "What is a feature in machine learning?",
+    "choices": ["An input variable used to make predictions", "The final prediction result", "A database table name", "A type of chart"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E014",
+    "difficulty": "easy",
+    "category": "ml_basics",
+    "question": "What is a label in supervised learning?",
+    "choices": ["The correct output we want to predict", "A random number for shuffling data", "A missing value marker", "A type of feature scaling"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E015",
+    "difficulty": "easy",
+    "category": "evaluation",
+    "question": "Accuracy is most commonly used to evaluate which type of problems?",
+    "choices": ["Classification", "Sorting algorithms", "File compression", "Database indexing"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E016",
+    "difficulty": "easy",
+    "category": "data",
+    "question": "What is a dataset?",
+    "choices": ["A collection of data points, often in rows and columns", "A computer program that runs games", "A type of network protocol", "A password storage method"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_E017",
+    "difficulty": "easy",
+    "category": "statistics",
+    "question": "Which value describes the spread between the smallest and largest numbers?",
+    "choices": ["Range", "Mean", "Mode", "Median"],
+    "answerIndex": 0
+  },
+
+  {
+    "id": "DS_M001",
+    "difficulty": "medium",
+    "category": "statistics",
+    "question": "What does standard deviation measure?",
+    "choices": ["How spread out values are around the mean", "The most frequent value", "The middle value", "The total number of values"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M002",
+    "difficulty": "medium",
+    "category": "statistics",
+    "question": "Which statement best describes correlation?",
+    "choices": ["A measure of how two variables move together", "Proof that one variable causes another", "A way to remove outliers", "A method to encrypt data"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M003",
+    "difficulty": "medium",
+    "category": "ml_basics",
+    "question": "What is overfitting in machine learning?",
+    "choices": ["When a model learns noise and performs poorly on new data", "When a model is too simple to learn patterns", "When data has missing values", "When training is done too quickly"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M004",
+    "difficulty": "medium",
+    "category": "ml_basics",
+    "question": "What is underfitting in machine learning?",
+    "choices": ["When a model is too simple and misses patterns in the data", "When a model memorizes the training set", "When a dataset has duplicates", "When features are standardized"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M005",
+    "difficulty": "medium",
+    "category": "evaluation",
+    "question": "In a confusion matrix, what is a false positive?",
+    "choices": ["Predicting positive when the true label is negative", "Predicting negative when the true label is positive", "Predicting positive when the true label is positive", "Predicting negative when the true label is negative"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M006",
+    "difficulty": "medium",
+    "category": "evaluation",
+    "question": "What is precision in classification?",
+    "choices": ["True positives divided by predicted positives", "True positives divided by actual positives", "Accuracy on negative class only", "The rate of false negatives"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M007",
+    "difficulty": "medium",
+    "category": "evaluation",
+    "question": "What is recall in classification?",
+    "choices": ["True positives divided by actual positives", "True positives divided by predicted positives", "True negatives divided by predicted negatives", "The average prediction error"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M008",
+    "difficulty": "medium",
+    "category": "data_cleaning",
+    "question": "Why is normalization or standardization used in many ML models?",
+    "choices": ["To put features on a similar scale", "To delete all outliers", "To convert labels into text", "To increase dataset size"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M009",
+    "difficulty": "medium",
+    "category": "ml_models",
+    "question": "Which algorithm is commonly used for binary classification?",
+    "choices": ["Logistic regression", "K means", "Apriori", "Dijkstra algorithm"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M010",
+    "difficulty": "medium",
+    "category": "ml_models",
+    "question": "What is K means mainly used for?",
+    "choices": ["Clustering similar data points", "Predicting continuous values", "Encrypting sensitive data", "Sorting an array"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M011",
+    "difficulty": "medium",
+    "category": "ml_models",
+    "question": "What does a decision tree do?",
+    "choices": ["Splits data using rules to make predictions", "Always finds shortest paths", "Only compresses images", "Only works on text data"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M012",
+    "difficulty": "medium",
+    "category": "ml_models",
+    "question": "What is a common use of linear regression?",
+    "choices": ["Predicting a numeric value from features", "Grouping customers into clusters", "Detecting malware", "Encrypting network traffic"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M013",
+    "difficulty": "medium",
+    "category": "data",
+    "question": "What is the main purpose of a train test split?",
+    "choices": ["Evaluate model performance on unseen data", "Increase the number of features", "Remove missing values automatically", "Convert text to numbers"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M014",
+    "difficulty": "medium",
+    "category": "ml_basics",
+    "question": "What is cross validation mainly used for?",
+    "choices": ["More reliable evaluation by training and testing on multiple folds", "Encrypting a dataset", "Speeding up file transfers", "Removing duplicates"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M015",
+    "difficulty": "medium",
+    "category": "data_visualization",
+    "question": "What does a scatter plot usually show?",
+    "choices": ["Relationship between two numerical variables", "Counts of categories only", "Trends over time only", "Percent of a whole only"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M016",
+    "difficulty": "medium",
+    "category": "statistics",
+    "question": "Which distribution is commonly used to model the number of events in a fixed time interval?",
+    "choices": ["Poisson distribution", "Uniform distribution", "Bernoulli distribution", "Geometric distribution"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_M017",
+    "difficulty": "medium",
+    "category": "data",
+    "question": "What is one hot encoding used for?",
+    "choices": ["Converting categories into binary indicator features", "Finding outliers in numeric data", "Reducing file size", "Encrypting sensitive columns"],
+    "answerIndex": 0
+  },
+
+  {
+    "id": "DS_H001",
+    "difficulty": "hard",
+    "category": "statistics",
+    "question": "What is p value most commonly used for in hypothesis testing?",
+    "choices": ["Measuring how compatible the data is with a null hypothesis", "Measuring model training time", "Choosing the best chart type", "Compressing datasets"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H002",
+    "difficulty": "hard",
+    "category": "statistics",
+    "question": "What does a confidence interval represent?",
+    "choices": ["A range of plausible values for a population parameter", "A guarantee that the estimate is correct", "The exact value of the parameter", "A method to remove outliers"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H003",
+    "difficulty": "hard",
+    "category": "ml_models",
+    "question": "What is the main idea of regularization in machine learning?",
+    "choices": ["Penalize model complexity to reduce overfitting", "Increase training data size automatically", "Convert text features into numbers", "Guarantee 100 percent accuracy"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H004",
+    "difficulty": "hard",
+    "category": "ml_models",
+    "question": "L1 regularization tends to produce what kind of model weights?",
+    "choices": ["Sparse weights with some exactly zero", "All weights equal", "Only negative weights", "Only integer weights"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H005",
+    "difficulty": "hard",
+    "category": "ml_models",
+    "question": "L2 regularization tends to have what effect on model weights?",
+    "choices": ["Shrink weights toward zero without making many exactly zero", "Make many weights exactly one", "Increase all weights equally", "Remove all features"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H006",
+    "difficulty": "hard",
+    "category": "ml_models",
+    "question": "Which metric is most appropriate for imbalanced classification problems?",
+    "choices": ["F1 score", "Accuracy", "Mean squared error", "R squared"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H007",
+    "difficulty": "hard",
+    "category": "ml_models",
+    "question": "What does gradient descent do in machine learning?",
+    "choices": ["Iteratively minimizes a loss function by updating parameters", "Sorts data into buckets", "Converts categorical variables into numbers", "Creates a confusion matrix automatically"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H008",
+    "difficulty": "hard",
+    "category": "ml_models",
+    "question": "Which technique reduces dimensionality by maximizing variance along new axes?",
+    "choices": ["PCA", "KNN", "Naive Bayes", "Min max scaling"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H009",
+    "difficulty": "hard",
+    "category": "ml_models",
+    "question": "What is the key assumption of naive Bayes classifiers?",
+    "choices": ["Features are conditionally independent given the class", "All features are normally distributed", "Data is always linearly separable", "Labels are continuous values"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H010",
+    "difficulty": "hard",
+    "category": "evaluation",
+    "question": "What does AUC most commonly measure?",
+    "choices": ["Ability of a classifier to rank positives above negatives across thresholds", "Average training time of a model", "Number of features used", "Variance of the dataset"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H011",
+    "difficulty": "hard",
+    "category": "data",
+    "question": "What is data leakage in machine learning?",
+    "choices": ["Using information during training that would not be available at prediction time", "Losing data due to a hard drive failure", "Encrypting data at rest", "Removing duplicates from a dataset"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H012",
+    "difficulty": "hard",
+    "category": "time_series",
+    "question": "Why is random shuffling often inappropriate for time series train test splits?",
+    "choices": ["It can leak future information into the training set", "It reduces file size", "It increases label noise", "It makes models always underfit"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H013",
+    "difficulty": "hard",
+    "category": "statistics",
+    "question": "What is the central limit theorem commonly used to justify?",
+    "choices": ["Sample means approach a normal distribution as sample size grows", "All data is normally distributed", "Outliers should be removed", "Regression always fits perfectly"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H014",
+    "difficulty": "hard",
+    "category": "ml_models",
+    "question": "Which method is commonly used to estimate feature importance in tree based models?",
+    "choices": ["Gini or impurity decrease", "Euclidean distance only", "Pearson correlation only", "One hot encoding"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H015",
+    "difficulty": "hard",
+    "category": "statistics",
+    "question": "What does multicollinearity refer to in regression?",
+    "choices": ["High correlation between predictor variables", "High error in predictions", "Having too many rows", "Missing values in the response"],
+    "answerIndex": 0
+  },
+  {
+    "id": "DS_H016",
+    "difficulty": "hard",
+    "category": "ml_models",
+    "question": "What is the bias variance tradeoff about?",
+    "choices": ["Balancing underfitting and overfitting", "Choosing the best programming language", "Compressing data without losing information", "Encrypting data in transit"],
+    "answerIndex": 0
+  }
+]

@@ -1,21 +1,19 @@
 /**
- * Cortex Trivia — Full Integration Frontend (Sprint 2)
+ * Cortex Trivia — Frontend Integration (Sprint 2 + Sprint 3)
  *
  * Jose Rodriguez (me):
- * - For demo readiness, I’m wiring the frontend to Daniel’s backend routes.
- * - I’m keeping the logic simple and testable:
- *   Lobby -> Start game -> Quiz -> Results -> Lobby
+ * - I’m keeping the existing Sprint 2 demo flow stable (Lobby → Quiz → Results).
+ * - I’m adding Sprint 3 scaffolding (Host page + Player page) without rewriting what already works.
  *
- * Ownership notes:
- * - Daniel owns backend session + question delivery routes.
- * - Renier owns scoring persistence and result calculations.
- * - I’m only wiring UI + API calls here.
+ * Why I’m doing it this way:
+ * - I want the UI to be testable at every step (no “big bang” refactor right before a demo).
+ * - I want the backend contract to be flexible while teammates iterate (support old + new endpoints).
  */
 
 const API_BASE = "http://127.0.0.1:5000";
 
-// I store demo state in sessionStorage so each browser window can act as a different “player”.
-const STORAGE_KEY = "cortex_demo_state_v1";
+// I store state in sessionStorage so each browser window can act independently (host vs player).
+const STORAGE_KEY = "cortex_demo_state_v2";
 
 function loadState() {
   try {
@@ -33,6 +31,19 @@ function clearState() {
   sessionStorage.removeItem(STORAGE_KEY);
 }
 
+function defaultState() {
+  return {
+    role: "",              // "host" | "player"
+    session_code: "",      // short code
+    bank_id: "cs",         // category / question bank id
+    players: [],           // list of players (host page mainly)
+    active_player: "",     // current player name (player page / quiz)
+    game_id: "",           // backend game id
+    questions: [],         // cached question set
+    idx: 0                 // current question index
+  };
+}
+
 function $(id) {
   return document.getElementById(id);
 }
@@ -42,202 +53,406 @@ function setText(id, txt) {
   if (el) el.textContent = txt;
 }
 
+function setStatus(id, msg) {
+  const el = $(id);
+  if (el) el.textContent = msg;
+}
+
+function getQueryParam(name) {
+  try {
+    return new URL(window.location.href).searchParams.get(name);
+  } catch {
+    return null;
+  }
+}
+
 function makeSessionCode() {
+  // I avoid ambiguous characters so teammates can read the code aloud during a demo.
   const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let out = "";
   for (let i = 0; i < 6; i++) out += letters[Math.floor(Math.random() * letters.length)];
   return out;
 }
 
-async function postJson(path, body) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+async function apiRequest(path, { method = "GET", body = null } = {}) {
+  const opts = { method, headers: {} };
 
-  // If fetch fails at network level, this throws before we get here.
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`${res.status} ${text}`.trim());
+  if (body !== null) {
+    opts.headers["Content-Type"] = "application/json";
+    opts.body = JSON.stringify(body);
   }
 
-  return res.json();
-}
+  const res = await fetch(`${API_BASE}${path}`, opts);
+  const text = await res.text().catch(() => "");
+  let json = null;
 
-async function getJson(path) {
-  const res = await fetch(`${API_BASE}${path}`);
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`${res.status} ${text}`.trim());
+  try {
+    json = text ? JSON.parse(text) : null;
+  } catch {
+    json = null;
   }
-  return res.json();
+
+  if (!res.ok) {
+    const msg = (json && (json.message || json.error)) || text || `${res.status} ${res.statusText}`;
+    throw new Error(msg);
+  }
+
+  return json;
 }
 
-/* -----------------------------
-   Lobby
------------------------------- */
+async function tryPost(paths, payload) {
+  // I try endpoints in order so our frontend survives backend renames.
+  let lastErr = null;
+  for (const p of paths) {
+    try {
+      return await apiRequest(p, { method: "POST", body: payload });
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error("Request failed");
+}
 
+async function tryGet(paths) {
+  let lastErr = null;
+  for (const p of paths) {
+    try {
+      return await apiRequest(p, { method: "GET" });
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error("Request failed");
+}
+
+/* =========================================================
+   PAGE: Lobby (frontend/index.html)
+   IDs used:
+   - createName, bankSelect, createBtn
+   - joinCode, joinName, joinBtn
+   - sessionCode, playerList, statusText
+   - startBtn, leaveBtn (legacy demo buttons; we keep them safe)
+========================================================= */
 function initLobby() {
-  const createName = $("createName");
   const createBtn = $("createBtn");
-
-  const joinCode = $("joinCode");
-  const joinName = $("joinName");
   const joinBtn = $("joinBtn");
+  const startBtn = $("startBtn");   // legacy (optional)
+  const leaveBtn = $("leaveBtn");   // legacy (optional)
 
-  const leaveBtn = $("leaveBtn");
-  const startBtn = $("startBtn");
+  if (!createBtn && !joinBtn) return;
 
-  const sessionCodeEl = $("sessionCode");
-  const playerListEl = $("playerList");
-  const statusText = $("statusText");
-
-  // Jose: single local state model for the lobby page.
-  let state =
-    loadState() ||
-    {
-      session_code: "",
-      players: [],
-      // Jose: “active_player” is who this browser window represents for submits/results.
-      active_player: "",
-      game_id: "",
-      // Jose: cache questions on the client only for UI navigation.
-      questions: [],
-      idx: 0,
-    };
-
-  function persist() {
-    saveState(state);
-  }
-
-  function setStatus(msg) {
-    if (statusText) statusText.textContent = msg;
-  }
+  let state = loadState() || defaultState();
 
   function render() {
     setText("sessionCode", state.session_code || "—");
     setText("playerList", state.players.length ? state.players.join(", ") : "—");
-
-    // Jose: I allow clicking everything; status text guides the user.
-    if (!state.session_code) setStatus("Create or Join a session to begin.");
-    else setStatus(`Session ready (${state.session_code}). Press Start Game to create backend game.`);
+    const bankSelect = $("bankSelect");
+    if (bankSelect) bankSelect.value = state.bank_id || "cs";
   }
 
-  // Create
-  createBtn?.addEventListener("click", (e) => {
+  // Host creates a session and immediately goes to host.html
+  createBtn?.addEventListener("click", async (e) => {
     e.preventDefault();
 
-    const host = (createName?.value || "").trim() || "Host";
-    state.session_code = makeSessionCode();
-    state.players = [host];
-    state.active_player = host;
+    const hostName = ($("createName")?.value || "").trim() || "Host";
+    const bankId = $("bankSelect")?.value || "cs";
 
-    // Reset any previous run
-    state.game_id = "";
-    state.questions = [];
-    state.idx = 0;
+    setStatus("statusText", "Creating session…");
 
-    // Convenience: copy the code into join box for quick testing
-    if (joinCode) joinCode.value = state.session_code;
+    // I reset state so a previous game_id doesn’t leak into a new session.
+    state = defaultState();
+    state.role = "host";
+    state.active_player = hostName;
+    state.bank_id = bankId;
 
-    persist();
-    render();
-    setStatus(`Created session ${state.session_code} as ${host}.`);
+    try {
+      // Preferred (Sprint 3): /session/create
+      // Fallback: /create
+      const resp = await tryPost(
+        ["/session/create", "/create"],
+        { host: hostName, host_name: hostName, bank_id: bankId, bank: bankId }
+      );
+
+      // I normalize whatever the backend returns into our frontend state.
+      const code = resp.session_code || resp.code || makeSessionCode();
+      state.session_code = String(code).toUpperCase();
+      state.players = resp.players || [hostName];
+
+      saveState(state);
+      render();
+
+      setStatus("statusText", `Session created: ${state.session_code}. Sending host to dashboard…`);
+      window.location.href = "./host.html";
+    } catch (err) {
+      // If backend is down, I still allow UI testing (demo safety), but I keep the status honest.
+      state.session_code = makeSessionCode();
+      state.players = [hostName];
+      saveState(state);
+      render();
+      setStatus("statusText", `Backend create failed (${err.message}). Using local demo code: ${state.session_code}`);
+      window.location.href = "./host.html";
+    }
   });
 
-  // Join
-  joinBtn?.addEventListener("click", (e) => {
+  // Player joins and goes to player.html
+  joinBtn?.addEventListener("click", async (e) => {
     e.preventDefault();
 
-    const code = (joinCode?.value || "").trim().toUpperCase();
-    const player = (joinName?.value || "").trim() || "Player";
+    const code = ($("joinCode")?.value || "").trim().toUpperCase();
+    const playerName = ($("joinName")?.value || "").trim() || "Player";
 
     if (!code) {
-      setStatus("Enter a session code to join.");
+      setStatus("statusText", "Enter a session code to join.");
       return;
     }
 
+    setStatus("statusText", "Joining session…");
+
+    state = defaultState();
+    state.role = "player";
     state.session_code = code;
+    state.active_player = playerName;
 
-    if (!state.players.includes(player)) state.players.push(player);
-    state.active_player = player;
+    try {
+      // Preferred (Sprint 3): /session/join
+      // Fallback: /join
+      const resp = await tryPost(
+        ["/session/join", "/join"],
+        { session_code: code, player: playerName, player_name: playerName }
+      );
 
-    // Reset run state (joining should not reuse an old game_id)
-    state.game_id = "";
-    state.questions = [];
-    state.idx = 0;
+      state.players = resp.players || resp.player_list || [playerName];
+      state.bank_id = resp.bank_id || state.bank_id;
 
-    persist();
-    render();
-    setStatus(`Joined session ${state.session_code} as ${player}.`);
+      saveState(state);
+      render();
+
+      setStatus("statusText", `Joined ${code} as ${playerName}. Sending player to waiting room…`);
+      window.location.href = "./player.html";
+    } catch (err) {
+      // Even if backend join fails, I keep player page usable for UI testing.
+      state.players = [playerName];
+      saveState(state);
+      render();
+      setStatus("statusText", `Backend join failed (${err.message}). Opening waiting room anyway…`);
+      window.location.href = "./player.html";
+    }
   });
 
-  // Leave
+  // Legacy buttons (optional): keep them safe if present.
+  startBtn?.addEventListener("click", async (e) => {
+    e.preventDefault();
+    setStatus("statusText", "Sprint 3: start the game from the Host page.");
+  });
+
   leaveBtn?.addEventListener("click", (e) => {
     e.preventDefault();
     clearState();
-    state = {
-      session_code: "",
-      players: [],
-      active_player: "",
-      game_id: "",
-      questions: [],
-      idx: 0,
-    };
+    state = defaultState();
     render();
-    setStatus("Left session.");
+    setStatus("statusText", "Left session.");
   });
 
-  // Start Game (backend)
-  startBtn?.addEventListener("click", async (e) => {
-    e.preventDefault();
+  render();
+  setStatus("statusText", "Ready.");
+}
 
-    if (!state.session_code) {
-      setStatus("Create or Join a session first.");
-      return;
-    }
-    if (!state.players.length) {
-      setStatus("You need at least one player to start.");
-      return;
-    }
+/* =========================================================
+   PAGE: Host (frontend/host.html)
+   IDs used:
+   - hostSessionCode, hostBank, hostPlayers, hostStatus
+   - hostStartBtn, hostBackBtn, copyCodeBtn
+========================================================= */
+function initHost() {
+  if (!$("hostStartBtn")) return;
 
-    setStatus("Starting game via backend…");
+  let state = loadState() || defaultState();
 
+  // If I got here without a host session, I want a clear message instead of silent failure.
+  if (state.role !== "host" || !state.session_code) {
+    setText("hostSessionCode", "—");
+    setText("hostBank", "—");
+    setText("hostPlayers", "No active host session. Go back to Lobby and Create a session.");
+    setStatus("hostStatus", "Missing session state.");
+    return;
+  }
+
+  function render() {
+    setText("hostSessionCode", state.session_code || "—");
+    setText("hostBank", state.bank_id || "—");
+    setText("hostPlayers", state.players.length ? state.players.join(", ") : "Waiting for players…");
+  }
+
+  async function refreshSession() {
+    // I poll session state so the host can see players join (Sprint 3 direction).
     try {
-      // Daniel’s backend expects: { session_code, players }
-      const data = await postJson("/start", {
-        session_code: state.session_code,
-        players: state.players,
-      });
+      const resp = await tryGet([`/session/${encodeURIComponent(state.session_code)}`]);
 
-      if (!data.game_id) {
-        throw new Error("Backend did not return game_id.");
+      // Normalize into state (don’t assume backend field names).
+      state.players = resp.players || state.players;
+      state.bank_id = resp.bank_id || state.bank_id;
+
+      if (resp.game_id) {
+        state.game_id = resp.game_id;
       }
 
-      state.game_id = data.game_id;
+      saveState(state);
+      render();
 
-      // Reset quiz progress
+      if (resp.started && resp.game_id) {
+        setStatus("hostStatus", `Game started (game_id: ${resp.game_id}).`);
+      } else {
+        setStatus("hostStatus", "Waiting… share the code with players.");
+      }
+    } catch {
+      // I don't fail hard because we still want the UI usable even if session polling isn't ready.
+      render();
+      setStatus("hostStatus", "Host ready. (Session polling not available yet.)");
+    }
+  }
+
+  $("hostBackBtn")?.addEventListener("click", () => {
+    clearState();
+    window.location.href = "./index.html";
+  });
+
+  $("copyCodeBtn")?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(state.session_code);
+      setStatus("hostStatus", "Copied session code.");
+    } catch {
+      setStatus("hostStatus", "Could not copy (browser blocked clipboard).");
+    }
+  });
+
+  $("hostStartBtn")?.addEventListener("click", async () => {
+    setStatus("hostStatus", "Starting game…");
+
+    try {
+      // Preferred (Sprint 3): /session/<code>/start
+      // Fallback: /start
+      let resp = null;
+
+      try {
+        resp = await tryPost(
+          [`/session/${encodeURIComponent(state.session_code)}/start`],
+          {}
+        );
+      } catch {
+        resp = await tryPost(
+          ["/start"],
+          {
+            session_code: state.session_code,
+            players: state.players,
+            bank_id: state.bank_id
+          }
+        );
+      }
+
+      const gameId = resp.game_id || resp.gameId || resp.id;
+      if (!gameId) throw new Error("Backend did not return game_id.");
+
+      state.game_id = gameId;
       state.questions = [];
       state.idx = 0;
 
-      persist();
-      setStatus("Game created. Opening quiz…");
-      window.location.href = "./quiz.html";
+      saveState(state);
+      render();
+
+      setStatus("hostStatus", `Game started (game_id: ${gameId}).`);
+      // Host does NOT auto-open quiz; host is a “monitor” page by design.
     } catch (err) {
-      console.error(err);
-      setStatus(`Start failed: ${err.message}`);
+      setStatus("hostStatus", `Start failed: ${err.message}`);
     }
   });
 
   render();
+  refreshSession();
+  // I refresh periodically so the host sees joins without clicking anything.
+  setInterval(refreshSession, 1500);
 }
 
-/* -----------------------------
-   Quiz
------------------------------- */
+/* =========================================================
+   PAGE: Player (frontend/player.html)
+   IDs used:
+   - playerSessionCode, playerName, playerStatus
+   - playerCheckBtn, playerOpenQuizBtn, playerBackBtn
+========================================================= */
+function initPlayer() {
+  if (!$("playerCheckBtn")) return;
 
+  let state = loadState() || defaultState();
+
+  if (state.role !== "player" || !state.session_code) {
+    setText("playerSessionCode", "—");
+    setText("playerName", "—");
+    setStatus("playerStatus", "Missing player session. Go back to Lobby and Join a session.");
+    $("playerOpenQuizBtn") && ($("playerOpenQuizBtn").disabled = true);
+    return;
+  }
+
+  function render() {
+    setText("playerSessionCode", state.session_code || "—");
+    setText("playerName", state.active_player || "Player");
+    const openBtn = $("playerOpenQuizBtn");
+    if (openBtn) openBtn.disabled = !state.game_id;
+  }
+
+  async function checkStatus() {
+    setStatus("playerStatus", "Checking status…");
+
+    try {
+      const resp = await tryGet([`/session/${encodeURIComponent(state.session_code)}`]);
+
+      state.bank_id = resp.bank_id || state.bank_id;
+
+      if (resp.game_id) {
+        state.game_id = resp.game_id;
+        saveState(state);
+        render();
+        setStatus("playerStatus", "Game started! You can open the quiz now.");
+        return;
+      }
+
+      setStatus("playerStatus", "Host has not started the game yet.");
+    } catch (err) {
+      // If the status endpoint isn't ready, I give a clear message instead of breaking the page.
+      setStatus("playerStatus", `Status endpoint not ready (${err.message}). Waiting for host…`);
+    }
+  }
+
+  $("playerBackBtn")?.addEventListener("click", () => {
+    clearState();
+    window.location.href = "./index.html";
+  });
+
+  $("playerCheckBtn")?.addEventListener("click", checkStatus);
+
+  $("playerOpenQuizBtn")?.addEventListener("click", () => {
+    if (!state.game_id) {
+      setStatus("playerStatus", "Game not started yet.");
+      return;
+    }
+
+    // I keep this redirect simple: quiz reads game_id from sessionStorage.
+    saveState(state);
+    window.location.href = "./quiz.html";
+  });
+
+  render();
+  setStatus("playerStatus", "Joined. Waiting for host to start…");
+}
+
+/* =========================================================
+   PAGE: Quiz (frontend/quiz.html)
+   This keeps your Sprint 2 behavior:
+   - game_id must exist
+   - fetch questions
+   - submit answer
+   - next question
+========================================================= */
 function initQuiz() {
+  // I only run quiz logic if quiz-specific elements exist.
   const questionText = $("questionText");
   const answersEl = $("answers");
   const statusEl = $("quizStatus");
@@ -250,24 +465,23 @@ function initQuiz() {
   let interval = null;       // stores setInterval for countdown display
 
 
-  // Disable until wired
-  submitBtn.disabled = true;
-  nextBtn.disabled = true;
+  if (!questionText || !answersEl || !statusEl || !progressPill || !submitBtn || !nextBtn) return;
 
-  let state = loadState();
+  let state = loadState() || defaultState();
 
-  // Jose: guard against direct navigation without starting a game.
-  if (!state || !state.game_id) {
+  if (!state.game_id) {
     setText("questionText", "No active game found.");
-    setText("quizStatus", "Go back to the Lobby and press Start Game first.");
+    setText("quizStatus", "Go to Host page and Start Game first.");
+    submitBtn.disabled = true;
+    nextBtn.disabled = true;
     return;
   }
 
   let selectedAnswerIndex = null;
   let submitted = false;
 
-  function setStatus(msg) {
-    if (statusEl) statusEl.textContent = msg;
+  function setQuizStatus(msg) {
+    statusEl.textContent = msg;
   }
 
   function clearTimers() {
@@ -283,8 +497,8 @@ function initQuiz() {
     selectedAnswerIndex = null;
     submitted = false;
 
-    setText("progressPill", `Question ${state.idx + 1} / ${state.questions.length}`);
-    setText("questionText", q.question);
+    progressPill.textContent = `Question ${state.idx + 1} / ${state.questions.length}`;
+    questionText.textContent = q.question;
 
     answersEl.innerHTML = "";
 
@@ -299,14 +513,14 @@ function initQuiz() {
 
         selectedAnswerIndex = i;
 
-        // Clear selection
-        Array.from(answersEl.querySelectorAll("button.answer")).forEach((b) =>
-          b.classList.remove("selected")
-        );
+        Array.from(answersEl.querySelectorAll("button.answer")).forEach((b) => {
+          b.classList.remove("selected");
+        });
+
         btn.classList.add("selected");
 
         submitBtn.disabled = false;
-        setStatus("Selection ready. Press Submit.");
+        setQuizStatus("Selection ready. Press Submit.");
       });
 
       answersEl.appendChild(btn);
@@ -314,7 +528,7 @@ function initQuiz() {
 
     submitBtn.disabled = true;
     nextBtn.disabled = true;
-    setStatus("Pick an answer.");
+    setQuizStatus("Pick an answer.");
 
 
     // --- START TIMER ---
@@ -368,18 +582,16 @@ function initQuiz() {
 }
 
   async function loadQuestionsIfNeeded() {
-    if (Array.isArray(state.questions) && state.questions.length === 10) return;
+    if (Array.isArray(state.questions) && state.questions.length > 0) return;
 
-    setStatus("Fetching questions from backend…");
+    setQuizStatus("Fetching questions from backend…");
 
-    // Daniel’s backend provides /game/<game_id>/questions
-    const data = await getJson(`/game/${encodeURIComponent(state.game_id)}/questions`);
+    const data = await apiRequest(`/game/${encodeURIComponent(state.game_id)}/questions`, { method: "GET" });
 
     if (!data.questions || !Array.isArray(data.questions)) {
       throw new Error("Backend returned invalid questions payload.");
     }
 
-    // Jose: clamp to 10 to match Sprint 2 demo.
     state.questions = data.questions.slice(0, 10);
     state.idx = 0;
 
@@ -388,7 +600,7 @@ function initQuiz() {
 
   submitBtn.addEventListener("click", async () => {
     if (selectedAnswerIndex === null) {
-      setStatus("Pick an answer first.");
+      setQuizStatus("Pick an answer first.");
       return;
     }
 
@@ -397,33 +609,34 @@ function initQuiz() {
     clearTimers(); // <-- STOP timer when user submits
     submitBtn.disabled = true;
 
-    setStatus("Submitting answer…");
+    setQuizStatus("Submitting answer…");
 
     try {
-      // Daniel’s backend expects: { question_id, answer_index, player }
-      const resp = await postJson(`/game/${encodeURIComponent(state.game_id)}/submit`, {
-        question_id: q.id,
-        answer_index: selectedAnswerIndex,
-        player: state.active_player || state.players[0] || "Player",
+      const playerName = state.active_player || state.players[0] || "Player";
+
+      const resp = await apiRequest(`/game/${encodeURIComponent(state.game_id)}/submit`, {
+        method: "POST",
+        body: {
+          question_id: q.id,
+          answer_index: selectedAnswerIndex,
+          player: playerName
+        }
       });
 
-      // Jose: feedback only; scoring is handled server-side by Renier’s scoring module.
-      if (resp.is_correct === true) setStatus("Correct ✅");
-      else setStatus(`Wrong ❌ (Correct: ${resp.correct_text})`);
+      if (resp.is_correct === true) setQuizStatus("Correct ✅");
+      else setQuizStatus(`Wrong ❌ (Correct: ${resp.correct_text})`);
 
       nextBtn.disabled = false;
     } catch (err) {
-      console.error(err);
-      setStatus(`Submit failed: ${err.message}`);
-      // Allow retry
       submitted = false;
       submitBtn.disabled = false;
+      setQuizStatus(`Submit failed: ${err.message}`);
     }
   });
 
   nextBtn.addEventListener("click", () => {
     if (!submitted) {
-      setStatus("Submit before Next.");
+      setQuizStatus("Submit before Next.");
       return;
     }
 
@@ -445,72 +658,58 @@ function initQuiz() {
       await loadQuestionsIfNeeded();
       renderQuestion();
     } catch (err) {
-      console.error(err);
-      setText("questionText", "Could not load questions.");
-      setStatus(`Error: ${err.message}`);
+      questionText.textContent = "Could not load questions.";
+      setQuizStatus(`Error: ${err.message}`);
     }
   })();
 }
 
-/* -----------------------------
-   Results
------------------------------- */
-
+/* =========================================================
+   PAGE: Results (frontend/results.html)
+========================================================= */
 function initResults() {
-  const correctEl = $("correctCount");
-  const wrongEl = $("wrongCount");
-  const scoreEl = $("scorePoints");
   const statusEl = $("resultsStatus");
   const backBtn = $("backToLobbyBtn");
 
-  const state = loadState();
+  if (!statusEl && !backBtn) return;
 
-  function setStatus(msg) {
-    if (statusEl) statusEl.textContent = msg;
-  }
+  const state = loadState() || defaultState();
+  const player = state.active_player || (state.players && state.players[0]) || "Player";
 
-  if (!state) {
-    setStatus("No session state found. Go back to the Lobby.");
-    return;
-  }
-
-  const player = state.active_player || state.players?.[0] || "Player";
-
-  (async () => {
-    setStatus("Loading results from backend…");
+  async function loadResults() {
+    if (statusEl) statusEl.textContent = "Loading results…";
 
     try {
-      const data = await getJson(`/results/${encodeURIComponent(player)}`);
+      const data = await apiRequest(`/results/${encodeURIComponent(player)}`, { method: "GET" });
 
-      // Jose: backend response fields are correct/wrong/final_score
       setText("correctCount", String(data.correct ?? "—"));
       setText("wrongCount", String(data.wrong ?? "—"));
       setText("scorePoints", String(data.final_score ?? "—"));
 
-      setStatus(`Results loaded for ${player}.`);
+      if (statusEl) statusEl.textContent = `Results loaded for ${player}.`;
     } catch (err) {
-      console.error(err);
-      setStatus(`Could not load results: ${err.message}`);
+      if (statusEl) statusEl.textContent = `Could not load results: ${err.message}`;
     }
-  })();
+  }
 
   backBtn?.addEventListener("click", (e) => {
     e.preventDefault();
-
-    // Jose: I clear only run-specific state so you can start a new demo cleanly.
     clearState();
     window.location.href = "./index.html";
   });
+
+  loadResults();
 }
 
-/* -----------------------------
-   Boot
------------------------------- */
+/* =========================================================
+   BOOTSTRAP
+========================================================= */
+document.addEventListener("DOMContentLoaded", () => {
+  // I detect pages by their unique elements so I don't depend on data-page everywhere.
+  if ($("createBtn") || $("joinBtn")) initLobby();
+  if ($("hostStartBtn")) initHost();
+  if ($("playerCheckBtn")) initPlayer();
+  if ($("questionText") && $("answers")) initQuiz();
+  if ($("backToLobbyBtn") || $("resultsStatus")) initResults();
+});
 
-(function boot() {
-  const page = document.body?.dataset?.page || "";
-
-  if (page === "lobby") initLobby();
-  if (page === "quiz") initQuiz();
-  if (page === "results") initResults();
-})();
