@@ -459,6 +459,11 @@ function initQuiz() {
   const progressPill = $("progressPill");
   const submitBtn = $("submitBtn");
   const nextBtn = $("nextBtn");
+  const timerEl = $("timer"); // optional element to show countdown
+
+  const QUESTION_TIME = 30; // seconds per question
+  let interval = null;       // stores setInterval for countdown display
+
 
   if (!questionText || !answersEl || !statusEl || !progressPill || !submitBtn || !nextBtn) return;
 
@@ -479,7 +484,13 @@ function initQuiz() {
     statusEl.textContent = msg;
   }
 
+  function clearTimers() {
+    if (interval) clearInterval(interval);
+    interval = null;
+  }
+
   function renderQuestion() {
+    clearTimers();
     const q = state.questions[state.idx];
     if (!q) return;
 
@@ -518,7 +529,57 @@ function initQuiz() {
     submitBtn.disabled = true;
     nextBtn.disabled = true;
     setQuizStatus("Pick an answer.");
-  }
+
+
+    // --- START TIMER ---
+    // Start countdown for current question
+    let remaining = QUESTION_TIME;
+    if (timerEl) timerEl.textContent = ` ${QUESTION_TIME}`;
+
+    interval = setInterval(async () => {
+    remaining = Math.max(remaining - 1, 0);
+
+    if (timerEl) timerEl.textContent = ` ${remaining}`;
+
+    if (remaining === 0) {
+      clearInterval(interval);
+
+     if (!submitted) {
+        submitted = true;
+       submitBtn.disabled = true;
+
+       setStatus("Time's up! Auto-submitting...");
+
+       const q = state.questions[state.idx];
+
+       try {
+         const resp = await postJson(
+            `/game/${encodeURIComponent(state.game_id)}/submit`,
+           {
+              question_id: q.id,
+              answer_index: selectedAnswerIndex ?? -1,
+             player: state.active_player || state.players[0] || "Player",
+            }
+          );
+
+          if (resp.is_correct === true) {
+           setStatus("Correct ✅");
+          } else {
+           setStatus(`Wrong ❌ (Correct: ${resp.correct_text})`);
+          }
+
+         nextBtn.disabled = false;
+
+        } catch (err) {
+          console.error(err);
+          setStatus(`Auto-submit failed: ${err.message}`);
+          submitted = false;
+         submitBtn.disabled = false;
+        }
+      }
+    }
+  }, 1000);
+}
 
   async function loadQuestionsIfNeeded() {
     if (Array.isArray(state.questions) && state.questions.length > 0) return;
@@ -545,6 +606,7 @@ function initQuiz() {
 
     const q = state.questions[state.idx];
     submitted = true;
+    clearTimers(); // <-- STOP timer when user submits
     submitBtn.disabled = true;
 
     setQuizStatus("Submitting answer…");
@@ -577,6 +639,8 @@ function initQuiz() {
       setQuizStatus("Submit before Next.");
       return;
     }
+
+    clearTimers(); // clear previous timer before loading next question
 
     state.idx += 1;
     saveState(state);
