@@ -25,7 +25,8 @@ def certify_time_subdiv(totalTime, subdiv):
 
     return applicable_subdiv
 
-#The multiplier function that should be called to obtain a multiplier value
+#The multiplier function that should be called to obtain a multiplier value, if currTime is not in time bracket
+#then, it will output None
 def time_multiplier(totalTime, subdiv, currTime):
     time_bracket = certify_time_subdiv(totalTime, subdiv) #we can decide if this is an outside variable or not
     if currTime in time_bracket:
