@@ -7,6 +7,31 @@ json_path = os.path.join(current_folder, '..', '..', 'db', 'results.json')
 # Function needs to be called with player and score parameters
 # If player doesn't have a score it initiates at 0
 # The function does not rewrite values for a new session
+
+
+#This creates the subdivision which we will use for which time brackets change the multiplier
+#this is called by the time_multiplier function and turns the time brackets into whole numbers
+#as to coincide with the actual time as it will be an int
+def certify_time_subdiv(totalTime, subdiv):
+    applicable_subdiv = []
+    crude_subdiv = totalTime
+
+    while crude_subdiv > 0:
+        applicable_subdiv.append(crude_subdiv)
+        crude_subdiv = crude_subdiv - (totalTime / subdiv)
+
+    for i in range (len(applicable_subdiv)):
+        applicable_subdiv[i] = int(applicable_subdiv[i])
+
+    return applicable_subdiv
+
+
+def time_multiplier(totalTime, subdiv, currTime):
+    time_bracket = certify_time_subdiv(totalTime, subdiv) #we can decide if this is an outside variable or not
+    if currTime in time_bracket:
+        return (1-((time_bracket.index(currTime)+0.0)/subdiv))
+
+
 def save_score(player, score):
 
     try:
@@ -50,5 +75,3 @@ def calculate_how_right(player):
 def clear_results():
     with open(json_path, 'w') as file:
         return json.dump({}, file)
-
-
