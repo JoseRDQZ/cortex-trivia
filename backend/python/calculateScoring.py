@@ -25,14 +25,14 @@ def certify_time_subdiv(totalTime, subdiv):
 
     return applicable_subdiv
 
-
+#The multiplier function that should be called to obtain a multiplier value
 def time_multiplier(totalTime, subdiv, currTime):
     time_bracket = certify_time_subdiv(totalTime, subdiv) #we can decide if this is an outside variable or not
     if currTime in time_bracket:
         return (1-((time_bracket.index(currTime)+0.0)/subdiv))
 
-
-def save_score(player, score):
+# Individual Player | True/False | multiplier
+def save_score(player, score, mult):
 
     try:
         with open(json_path, 'r') as file:
@@ -41,7 +41,7 @@ def save_score(player, score):
         results = {}
 
     result = results.get(player, {"score": 0, "total": 0})
-    result["score"] = result["score"] + int(score) * 10
+    result["score"] = result["score"] + int(score) * 10 * mult
     result["total"] = result["total"] + 10
     results[player] = result
 
