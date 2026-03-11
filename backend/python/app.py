@@ -20,7 +20,8 @@ from calculateScoring import (
     calculate_final_score,
     calculate_how_right,
     calculate_how_wrong,
-    clear_results
+    clear_results,
+    time_miltiplier # new import
 )
 
 # ==============================================================================
@@ -52,6 +53,15 @@ game_sessions = {}
 # JOSE PATCH: lightweight lobby/session storage for Sprint 3 host flow
 # - This is separate from "game_sessions" because it represents pre-game state (host created session, players joined, etc.)
 lobby_sessions = {}
+
+# ==============================================================================
+# Time scoring constants
+# Agree on these values with your team if they need to change
+# QUESTION_TOTAL_TIME = total seconds allowed per question
+# QUESTION_TIME_SUBDIV = how many scoring brackets exist within that time
+# ==============================================================================
+QUESTION_TOTAL_TIME = 30
+QUESTION_TIME_SUBDIV = 4
 
 
 # ==============================================================
@@ -150,7 +160,25 @@ def submit_answer(game_id):
 
     # Scoring integration
     if player:
-        save_score(player, is_correct) # True = 1 point, False = 0 points
+        # Frontend sends currTime (seconds remaining when player answered)
+        # 30 second timer split into 4 quarters (7.5s each):
+        # 22.5-30s remaining = 1.0, 15-22.5s = 0.75, 7.5-15s = 0.50, 0-7.5s = 0.25
+        curr_time = data.get("currTime")
+
+        if curr_time is not None:
+            if curr_time >= 22.5:
+                mult = 1.0
+            elif curr_time >= 15:
+                mult = 0.75
+            elif curr_time >= 7.5:
+                mult = 0.50
+            else:
+                mult = 0.25
+        else:
+            # If frontend hasn't implemented currTime yet, default to full multiplier
+            mult = time_multiplier(QUESTION_TOTAL_TIME, QUESTION_TIME_SUBDIV, QUESTION_TOTAL_TIME)
+
+        save_score(player, is_correct, mult) # score weighted by how fast they answered
 
     # Return results for a proper translation for the site to read them. (Python uses "True" while website uses "true")
     return jsonify({
@@ -434,4 +462,5 @@ if __name__ == '__main__':
     print("Server running on http://localhost:5000")
     # Start Flask server on port 5000 with debug mode on
     app.run(debug=True, port=5000)
+
 
