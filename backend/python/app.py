@@ -70,7 +70,7 @@ redis = Redis(
 # QUESTION_TIME_SUBDIV = how many scoring brackets exist within that time
 # ==============================================================================
 QUESTION_TOTAL_TIME = 30
-QUESTION_TIME_SUBDIV = 5
+QUESTION_TIME_SUBDIV = 4
 
 # ==============================================================================
 # Redis helper functions
@@ -204,18 +204,22 @@ def submit_answer(game_id):
     # Scoring integration
     if player:
         # Frontend sends currTime (seconds remaining when player answered)
-        # time_multiplier rewards faster answers with a higher multiplier
-        # If currTime is not sent yet, defaults to 1 (full points, no penalty)
+        # 30 second timer split into 4 quarters (7.5s each):
+        # 22.5-30s remaining = 1.0, 15-22.5s = 0.75, 7.5-15s = 0.50, 0-7.5s = 0.25
         curr_time = data.get("currTime")
 
         if curr_time is not None:
-            mult = time_multiplier(QUESTION_TOTAL_TIME, QUESTION_TIME_SUBDIV, curr_time)
-            # time_multiplier returns None if currTime falls outside a bracket
-            # so fall back to 1 if that happens
-            if mult is None:
-                mult = 1
+            if curr_time >= 22.5:
+                mult = 1.0
+            elif curr_time >= 15:
+                mult = 0.75
+            elif curr_time >= 7.5:
+                mult = 0.50
+            else:
+                mult = 0.25
         else:
-            mult = 1
+            # If frontend hasn't implemented currTime yet, default to full multiplier
+            mult = time_multiplier(QUESTION_TOTAL_TIME, QUESTION_TIME_SUBDIV, QUESTION_TOTAL_TIME)
 
         save_score(player, is_correct, mult) # score weighted by how fast they answered
 
@@ -549,3 +553,4 @@ if __name__ == '__main__':
     print("Server running on http://localhost:5000")
     # Start Flask server on port 5000 with debug mode on
     app.run(debug=True, port=5000)
+
