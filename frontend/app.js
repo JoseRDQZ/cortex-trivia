@@ -462,7 +462,10 @@ function initQuiz() {
   const timerEl = $("timer"); // optional element to show countdown
 
   const QUESTION_TIME = 30; // seconds per question
+  const BUFFER_TIME = 5;
   let interval = null;       // stores setInterval for countdown display
+  let currentTimeRemaining = QUESTION_TIME;
+  let bufferInterval = null;
 
 
   if (!questionText || !answersEl || !statusEl || !progressPill || !submitBtn || !nextBtn) return;
@@ -486,7 +489,9 @@ function initQuiz() {
 
   function clearTimers() {
     if (interval) clearInterval(interval);
+    if (bufferInterval) clearInterval(bufferInterval);
     interval = null;
+    bufferInterval = null;
   }
 
   function renderQuestion() {
@@ -526,61 +531,90 @@ function initQuiz() {
       answersEl.appendChild(btn);
     });
 
+    // BUFFER: hide answers for 5 seconds
+    answersEl.style.visibility = "hidden";
+
     submitBtn.disabled = true;
     nextBtn.disabled = true;
-    setQuizStatus("Pick an answer.");
+    setQuizStatus("Get ready...");
 
+    // --- BUFFER TIMER FIRST ---
+    let bufferRemaining = BUFFER_TIME;
 
-    // --- START TIMER ---
-    // Start countdown for current question
-    let remaining = QUESTION_TIME;
-    if (timerEl) timerEl.textContent = ` ${QUESTION_TIME}`;
+    if (timerEl) timerEl.textContent = ` ${bufferRemaining}`;
+    bufferInterval = setInterval(() => {
 
-    interval = setInterval(async () => {
-    remaining = Math.max(remaining - 1, 0);
+      bufferRemaining--;
+      
+      if (timerEl) timerEl.textContent = ` ${bufferRemaining}`;
 
-    if (timerEl) timerEl.textContent = ` ${remaining}`;
+      if (bufferRemaining <= 0){
+        clearInterval(bufferInterval);
 
-    if (remaining === 0) {
-      clearInterval(interval);
+        answersEl.style.visibility = "visible";
+        setQuizStatus("Pick an answer.");
+      
+    
+        // --- START TIMER ---
+        let remaining = QUESTION_TIME;
+        currentTimeRemaining = QUESTION_TIME;
 
-     if (!submitted) {
-        submitted = true;
-       submitBtn.disabled = true;
+        if (timerEl) timerEl.textContent = ` ${QUESTION_TIME}`;
 
-       setStatus("Time's up! Auto-submitting...");
+        interval = setInterval(async () => {
 
-       const q = state.questions[state.idx];
+          remaining = Math.max(remaining - 1, 0);
+          currentTimeRemaining = remaining;
 
-       try {
-         const resp = await postJson(
-            `/game/${encodeURIComponent(state.game_id)}/submit`,
-           {
-              question_id: q.id,
-              answer_index: selectedAnswerIndex ?? -1,
-             player: state.active_player || state.players[0] || "Player",
+          if (timerEl) timerEl.textContent = ` ${remaining}`;
+
+          if (remaining === 0) {
+            clearInterval(interval);
+
+            if (!submitted) {
+              submitted = true;
+              submitBtn.disabled = true;
+
+              setQuizStatus("Time's up! Auto-submitting...");
+
+              const q = state.questions[state.idx];
+
+              try {
+                const resp = await apiRequest(
+                  `/game/${encodeURIComponent(state.game_id)}/submit`, 
+                  {
+                    method: "POST",
+                    body: {
+                      question_id: q.id,
+                      answer_index: selectedAnswerIndex ?? -1,
+                      player: state.active_player || state.players[0] || "Player",
+                      currTime: currentTimeRemaining
+                    }
+                  }
+                );
+
+                if (resp.is_correct === true) {
+                  setQuizStatus("Correct ✅");
+                } else {
+                  setQuizStatus(`Wrong ❌ (Correct: ${resp.correct_text})`);
+                }
+
+                nextBtn.disabled = false;
+
+              } catch (err) {
+                console.error(err);
+                setQuizStatus(`Auto-submit failed: ${err.message}`);
+        
+                submitted = false;
+                submitBtn.disabled = false;
+              }
             }
-          );
-
-          if (resp.is_correct === true) {
-           setStatus("Correct ✅");
-          } else {
-           setStatus(`Wrong ❌ (Correct: ${resp.correct_text})`);
           }
-
-         nextBtn.disabled = false;
-
-        } catch (err) {
-          console.error(err);
-          setStatus(`Auto-submit failed: ${err.message}`);
-          submitted = false;
-         submitBtn.disabled = false;
-        }
+        }, 1000);
       }
-    }
-  }, 1000);
-}
-
+    }, 1000);
+  }
+  
   async function loadQuestionsIfNeeded() {
     if (Array.isArray(state.questions) && state.questions.length > 0) return;
 
@@ -619,7 +653,8 @@ function initQuiz() {
         body: {
           question_id: q.id,
           answer_index: selectedAnswerIndex,
-          player: playerName
+          player: playerName,
+          currTime: currentTimeRemaining
         }
       });
 
