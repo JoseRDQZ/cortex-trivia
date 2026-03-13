@@ -72,6 +72,8 @@ QUESTION_TIME_SUBDIV = 4
 QUESTION_BANK_FILES = {
     "cs": "cs_question_bank.json",
     "cybersec": "cybersec_question_bank.json",
+    "it": "information_technology_question_bank.json",
+    "datasci": "data_science_question_bank.json"
 }
 
 DEFAULT_BANK_ID = "cs"
@@ -104,6 +106,8 @@ def question_banks():
     banks = [
         {"id": "cs", "label": "Computer Science"},
         {"id": "cybersec", "label": "Cybersecurity"},
+        {"id": "it", "label": "Information Technology"},
+        {"id": "datasci", "label": "Data Science"},
     ]
     return jsonify({"default": DEFAULT_BANK_ID, "banks": banks})
 
