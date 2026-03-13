@@ -21,7 +21,7 @@ from calculateScoring import (
     calculate_how_right,
     calculate_how_wrong,
     clear_results,
-    time_miltiplier # new import
+    time_multiplier # new import
 )
 
 # ==============================================================================
