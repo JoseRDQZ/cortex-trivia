@@ -1,3 +1,8 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(__file__))
+
+
 # Using Flask since it helps connects Python to websites, and using jsonify since it translates Python data for websites.
 from flask import Flask, request, jsonify
 
