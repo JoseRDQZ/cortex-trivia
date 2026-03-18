@@ -12,80 +12,93 @@ The project maintains separation between frontend interface logic, backend sessi
 management, scoring logic, and the trivia question database.
 
 -------------------------------------------
-CURRENT STATUS (Sprint 3 – Multiplayer Foundation Complete)
+CURRENT STATUS (Sprint 4 – Gameplay Integration and Refinement)
 -------------------------------------------
 
-Sprint 3 expanded the project from a single-player demo into a multiplayer
-session-based application.
+Sprint 4 focused on integrating major gameplay systems into the multiplayer
+environment and refining the overall game experience.
 
-The system now supports a full multiplayer gameplay loop:
+The system now supports a more complete multiplayer gameplay flow:
 
-    Lobby → Session Creation → Join Session → Quiz Gameplay → Results
+    Lobby → Session Creation → Join Session → Timed Quiz Gameplay → Results
 
-During Sprint 3, the team implemented the core multiplayer infrastructure
-required to support multiple players participating in the same trivia session.
+During Sprint 4, the team successfully integrated time-based scoring,
+timer behavior, automatic question progression, and expanded quiz category
+support into the multiplayer session flow. These systems were tested
+together during the sprint demo, confirming that multiplayer sessions,
+timer progression, scoring updates, and category selection function
+cohesively during gameplay.
 
-The architecture intentionally uses a turn-based design rather than a
-real-time socket-based system. This simplifies synchronization and ensures
-consistent progression for all players.
+The architecture continues to follow a turn-based multiplayer model rather
+than relying on real-time socket-based communication. This keeps session
+progression controlled at the game-session level and supports fair,
+consistent behavior across all players.
 
 -------------------------------------------
-SPRINT 3 FEATURES
+SPRINT 4 FEATURES
 -------------------------------------------
 
-Multiplayer Session System
+Time-Based Scoring Implementation
 
-- Host can create a new game session
-- Players can join an existing session using a session ID
-- Host controls when the game begins
-- Late join prevention once the game starts
+- Scoring now incorporates response time in addition to correctness
+- Faster correct answers earn more points
+- Incorrect answers receive zero points
+- Scoring logic was integrated into multiplayer gameplay and accepted
+  during Sprint 4 review
 
-Session Lifecycle Management
+Timer and Auto-Advance Integration
 
-Game sessions operate under defined states:
-
-    Waiting
-    In Progress
-    Completed
-
-These session states allow the backend to control game progression and
-ensure consistent gameplay behavior.
-
-Turn-Based Multiplayer Gameplay
-
-- All players receive the same sequence of questions
-- Questions progress when:
+- A question timer system has been fully integrated into gameplay
+- Questions automatically advance when:
     1. All players submit their answers, or
-    2. The question timer expires
+    2. The timer expires
+- A 3-second reading buffer was added before players begin answering
+- Timer progression was tested successfully during multiplayer sessions
 
-This ensures all players remain synchronized throughout the session.
+Question and Category Consistency in Multiplayer
 
-Timer Integration
+- Multiplayer sessions maintain consistent question delivery across players
+- Additional quiz databases were integrated into the system
+- New categories successfully connected and validated include:
+    - Data Science
+    - Information Technology
+- Category selection and gameplay consistency were confirmed during demo
+  testing
 
-A timer system has been introduced to support:
+Gameplay System Integration
 
-- Time-limited questions
-- Automatic question progression
-- Foundation for time-based scoring
+- Timer behavior, scoring logic, and database expansion were successfully
+  integrated together
+- Multiplayer sessions, timer progression, scoring updates, and category
+  selection were validated in the sprint demo
+- The complete gameplay loop was tested from session creation through
+  final results display
 
-Multiplayer Score Tracking
+-------------------------------------------
+SPRINT 4 OUTCOME
+-------------------------------------------
 
-Scores are tracked at the session level, allowing:
+The following Sprint 4 user stories were accepted by the product owner:
 
-- Score updates during gameplay
-- Tracking multiple players in a single session
-- Final ranking display after the session completes
+- User Story 2 – Time-Based Scoring Implementation
+- User Story 3 – Timer and Auto-Advance Integration
+- User Story 4 – Question and Category Consistency in Multiplayer
 
-Expanded Question Categories
+The following Sprint 4 user stories were not accepted and were returned
+to the product backlog for refinement in Sprint 5:
 
-The question database now includes categories such as:
+- User Story 1 – Multiplayer Session Completion and Stability
+- User Story 5 – Multiplayer Results and Interface Refinement
 
-- Computer Science
-- Cybersecurity
-- Data Science
-- Information Technology
+Overall Sprint 4 outcome:
 
-The database will continue expanding throughout development.
+- Time-based scoring implemented and validated
+- Timer behavior and automatic progression integrated into gameplay
+- 3-second reading buffer added successfully
+- Expanded quiz databases integrated into the multiplayer system
+- Full gameplay loop demonstrated successfully during the sprint demo
+- Team communication and integration testing remained consistent
+  throughout the sprint
 
 -------------------------------------------
 SYSTEM ARCHITECTURE
@@ -129,6 +142,13 @@ For each game session:
 
 - 10 random non-repeating questions are selected
 - Questions are distributed to all players in the session
+
+The question database now includes categories such as:
+
+- Computer Science
+- Cybersecurity
+- Data Science
+- Information Technology
 
 -------------------------------------------
 PROJECT STRUCTURE
@@ -215,11 +235,13 @@ GAMEPLAY FLOW
 2. Players join the session using the session ID
 3. Host starts the game
 4. The backend selects 10 random trivia questions
-5. All players answer questions within the time limit
-6. Answers are submitted to the backend
-7. The backend processes scoring
-8. Questions advance when all players answer or time expires
-9. Final rankings are displayed on the results page
+5. All players receive the same question sequence
+6. A reading buffer is shown before answering begins
+7. Players answer questions within the time limit
+8. Answers are submitted to the backend
+9. The backend processes time-based scoring
+10. Questions advance when all players answer or time expires
+11. Final rankings are displayed on the results page
 
 -------------------------------------------
 TECH STACK
@@ -267,19 +289,23 @@ Diego A Sanchez
 Trivia question databases and category expansion.
 
 -------------------------------------------
-NEXT STEPS (Sprint 4)
+NEXT STEPS (Sprint 5)
 -------------------------------------------
 
-Sprint 4 focuses on stabilizing the multiplayer system and preparing
-the project for deployment.
+Sprint 5 will focus on refinement, stability, and deployment readiness.
 
 Planned improvements include:
 
-- Finalizing time-based scoring logic
-- Improving timer synchronization across players
-- Ensuring fair multiplayer progression
-- Expanding the trivia question database
-- Preparing the application for hosting and deployment
+- Refining the scoring multiplier for fairness across player response times
+- Improving multiplayer session stability and completion behavior
+- Enhancing the multiplayer results interface
+- Continuing deployment and hosting preparation
+- Allocating more time for integration testing earlier in the sprint
+- Exploring additional gameplay improvements such as:
+    - Question shuffling for replayability
+    - Adjustable timer duration within a defined range
+    - Optional reading buffer enable/disable control
+    - More detailed player performance metrics on the results page
 
 -------------------------------------------
 
