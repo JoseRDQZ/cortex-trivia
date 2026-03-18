@@ -119,10 +119,9 @@ DEFAULT_BANK_ID = "cs"
 _question_bank_cache = {}
 
 def load_questions_from_db(filename):
-    # os.path.abspath ensures the path works correctly on Vercel
-    # db folder is one level up from backend-python (not two like before)
+    # Go up two levels: backend/python -> backend -> root, then into db/
     backend_dir = os.path.dirname(os.path.abspath(__file__))
-    json_path = os.path.join(backend_dir, "..", "db", filename)
+    json_path = os.path.join(backend_dir, "..", "..", "db", filename)
 
     with open(json_path, "r", encoding="utf-8") as f:
         return json.load(f)

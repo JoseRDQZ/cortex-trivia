@@ -5,7 +5,7 @@
       "src": "backend/python/app.py",
       "use": "@vercel/python",
       "config": {
-        "includeFiles": ["backend/python/*.py"]
+        "includeFiles": ["backend/python/*.py", "db/*.json"]
       }
     }
   ],
