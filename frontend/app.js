@@ -10,7 +10,7 @@
  * - I want the backend contract to be flexible while teammates iterate (support old + new endpoints).
  */
 
-const API_BASE = "http://127.0.0.1:5000";
+const API_BASE = "https://cortex-trivia.vercel.app";
 
 // I store state in sessionStorage so each browser window can act independently (host vs player).
 const STORAGE_KEY = "cortex_demo_state_v2";
