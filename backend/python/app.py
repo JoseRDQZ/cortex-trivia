@@ -109,7 +109,7 @@ def set_lobby_session(session_code, lobby_data):
 # Fetch questions from database
 # ==============================================================
 
-# Question bank files live in the /db folder (one level above this file)
+# Question bank files live in the /db folder (two levels above this file)
 QUESTION_BANK_FILES = {
     "cs": "cs_question_bank.json",
     "cybersec": "cybersec_question_bank.json",
@@ -210,20 +210,31 @@ def submit_answer(game_id):
     is_correct = (user_answer == correct_answer)
 
     # Scoring integration
-        # Scoring integration
     if player:
         # Frontend sends currTime (seconds remaining when player answered)
-        # time_multiplier handles the bracket logic from calculateScoring.py
-        # If currTime doesn't land on a bracket it returns None (no multiplier update)
-        # When currTime hits 0 player gets 0 points as intended
+        # First tries time_multiplier from calculateScoring.py
+        # Falls back to quarter system if currTime doesn't land exactly on a bracket
+        # Score is ALWAYS saved regardless
         curr_time = data.get("currTime")
 
         if curr_time is not None:
+            # Try to get multiplier from time bracket
             mult = time_multiplier(QUESTION_TOTAL_TIME, QUESTION_TIME_SUBDIV, curr_time)
-            if mult is not None:
-                save_score(player, is_correct, mult)
-        # No else - if currTime not sent or mult is None we simply don't save score yet
-        # The frontend timer will keep sending currTime each second until player submits
+            # If currTime doesn't land exactly on a bracket value use quarter fallback
+            if mult is None:
+                if curr_time >= 22.5:
+                    mult = 1.0
+                elif curr_time >= 15:
+                    mult = 0.75
+                elif curr_time >= 7.5:
+                    mult = 0.50
+                else:
+                    mult = 0.25
+        else:
+            # If frontend hasn't sent currTime yet default to full multiplier
+            mult = 1.0
+
+        save_score(player, is_correct, mult) # score weighted by how fast they answered
 
     # Return results for a proper translation for the site to read them. (Python uses "True" while website uses "true")
     return jsonify({
@@ -535,7 +546,7 @@ def get_results(player):
             "player": player,
             "correct": correct,
             "wrong": wrong,
-            "final_score": final_score
+            "final_score": round(final_score, 2)
         })
     except:
         return jsonify({
@@ -555,4 +566,3 @@ if __name__ == '__main__':
     print("Server running on http://localhost:5000")
     # Start Flask server on port 5000 with debug mode on
     app.run(debug=True, port=5000)
-
