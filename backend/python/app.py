@@ -206,26 +206,20 @@ def submit_answer(game_id):
     is_correct = (user_answer == correct_answer)
 
     # Scoring integration
+        # Scoring integration
     if player:
         # Frontend sends currTime (seconds remaining when player answered)
-        # 30 second timer split into 4 quarters (7.5s each):
-        # 22.5-30s remaining = 1.0, 15-22.5s = 0.75, 7.5-15s = 0.50, 0-7.5s = 0.25
+        # time_multiplier handles the bracket logic from calculateScoring.py
+        # If currTime doesn't land on a bracket it returns None (no multiplier update)
+        # When currTime hits 0 player gets 0 points as intended
         curr_time = data.get("currTime")
 
         if curr_time is not None:
-            if curr_time >= 22.5:
-                mult = 1.0
-            elif curr_time >= 15:
-                mult = 0.75
-            elif curr_time >= 7.5:
-                mult = 0.50
-            else:
-                mult = 0.25
-        else:
-            # If frontend hasn't implemented currTime yet, default to full multiplier
-            mult = time_multiplier(QUESTION_TOTAL_TIME, QUESTION_TIME_SUBDIV, QUESTION_TOTAL_TIME)
-
-        save_score(player, is_correct, mult) # score weighted by how fast they answered
+            mult = time_multiplier(QUESTION_TOTAL_TIME, QUESTION_TIME_SUBDIV, curr_time)
+            if mult is not None:
+                save_score(player, is_correct, mult)
+        # No else - if currTime not sent or mult is None we simply don't save score yet
+        # The frontend timer will keep sending currTime each second until player submits
 
     # Return results for a proper translation for the site to read them. (Python uses "True" while website uses "true")
     return jsonify({

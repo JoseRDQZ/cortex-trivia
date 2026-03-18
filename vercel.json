@@ -63,6 +63,10 @@
       "dest": "frontend/app.js"
     },
     {
+      "src": "/index.html",
+      "dest": "frontend/index.html"
+    },
+    {
       "src": "/",
       "dest": "frontend/index.html"
     }
