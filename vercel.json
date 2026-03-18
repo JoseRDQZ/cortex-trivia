@@ -7,11 +7,27 @@
       "config": {
         "includeFiles": ["backend/python/*.py", "db/*.json"]
       }
+    },
+    {
+      "src": "frontend/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/api/(.*)",
+      "dest": "backend/python/app.py"
+    },
+    {
+      "src": "/(.*\\.(js|css|html|png|ico|svg))",
+      "dest": "frontend/\$1"
+    },
+    {
+      "src": "/",
+      "dest": "frontend/index.html"
+    },
+    {
+      "src": "/(start|session|game|results|questions|question_banks)(.*)",
       "dest": "backend/python/app.py"
     }
   ]
