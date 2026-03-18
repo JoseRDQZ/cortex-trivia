@@ -15,20 +15,36 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
+      "src": "/start",
       "dest": "backend/python/app.py"
     },
     {
-      "src": "/(.*\\.(js|css|html|png|ico|svg))",
-      "dest": "frontend/\$1"
+      "src": "/session/(.*)",
+      "dest": "backend/python/app.py"
+    },
+    {
+      "src": "/game/(.*)",
+      "dest": "backend/python/app.py"
+    },
+    {
+      "src": "/results/(.*)",
+      "dest": "backend/python/app.py"
+    },
+    {
+      "src": "/questions",
+      "dest": "backend/python/app.py"
+    },
+    {
+      "src": "/question_banks",
+      "dest": "backend/python/app.py"
     },
     {
       "src": "/",
       "dest": "frontend/index.html"
     },
     {
-      "src": "/(start|session|game|results|questions|question_banks)(.*)",
-      "dest": "backend/python/app.py"
+      "src": "/(.*)",
+      "dest": "frontend/\$1"
     }
   ]
 }
