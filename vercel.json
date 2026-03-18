@@ -39,12 +39,32 @@
       "dest": "backend/python/app.py"
     },
     {
-      "src": "/",
-      "dest": "frontend/index.html"
+      "src": "/host.html",
+      "dest": "frontend/host.html"
     },
     {
-      "src": "/(.*)",
-      "dest": "frontend/\$1"
+      "src": "/player.html",
+      "dest": "frontend/player.html"
+    },
+    {
+      "src": "/quiz.html",
+      "dest": "frontend/quiz.html"
+    },
+    {
+      "src": "/results.html",
+      "dest": "frontend/results.html"
+    },
+    {
+      "src": "/style.css",
+      "dest": "frontend/style.css"
+    },
+    {
+      "src": "/app.js",
+      "dest": "frontend/app.js"
+    },
+    {
+      "src": "/",
+      "dest": "frontend/index.html"
     }
   ]
 }
