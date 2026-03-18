@@ -63,14 +63,24 @@ def time_multiplier(totalTime, subdiv, currTime):
         return (1 - ((time_bracket.index(currTime) + 0.0) / subdiv))
 
 # Individual Player | True/False | multiplier
+# Now also tracks correct and wrong counts separately from weighted score
 def save_score(player, score, mult):
     # OLD: read from results.json file
     # NEW: read from Redis
     results = get_results_from_redis()
 
-    result = results.get(player, {"score": 0, "total": 0})
+    result = results.get(player, {"score": 0, "total": 0, "correct": 0, "wrong": 0})
+
+    # Weighted score points (used for final score percentage)
     result["score"] = result["score"] + int(score) * 10 * mult
     result["total"] = result["total"] + 10
+
+    # Simple correct/wrong count (used for display in results page)
+    if score:
+        result["correct"] = result.get("correct", 0) + 1
+    else:
+        result["wrong"] = result.get("wrong", 0) + 1
+
     results[player] = result
 
     # OLD: write to results.json file
@@ -86,23 +96,25 @@ def calculate_final_score(player):
     results = get_results_from_redis()
     result = results.get(player)
 
-    return result["score"] * 100 / result["total"]
+    return round(result["score"] * 100 / result["total"], 2)
 
 def calculate_how_wrong(player):
     # OLD: read from results.json file
     # NEW: read from Redis
+    # Now returns actual wrong count instead of weighted calculation
     results = get_results_from_redis()
     result = results.get(player)
 
-    return result["total"] - result["score"]
+    return result.get("wrong", 0)
 
 def calculate_how_right(player):
     # OLD: read from results.json file
     # NEW: read from Redis
+    # Now returns actual correct count instead of weighted score points
     results = get_results_from_redis()
     result = results.get(player)
 
-    return result["score"]
+    return result.get("correct", 0)
 
 def clear_results():
     # OLD: write empty dict to results.json file
