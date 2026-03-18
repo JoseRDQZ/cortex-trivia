@@ -55,8 +55,8 @@
       "dest": "frontend/results.html"
     },
     {
-      "src": "/style.css",
-      "dest": "frontend/style.css"
+      "src": "/styles.css",
+      "dest": "frontend/styles.css"
     },
     {
       "src": "/app.js",
