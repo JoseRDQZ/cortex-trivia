@@ -174,6 +174,9 @@ def handle_start_game():
     data = request.get_json() or {}
     bank_request = data.get("bank_id")  # "cs" or "cybersec"
     bank_id, active_bank = get_question_bank(bank_request)
+
+    question_time = data.get("question_time", 30)
+    buffer_enabled = data.get("buffer_enabled", True)
     
     session_code = data.get('session_code')
     players = data.get('players', [])
@@ -212,6 +215,8 @@ def handle_start_game():
     "players": players,
     "bank_id": bank_id,
     "questions": selected_questions,
+    "question_time": question_time,
+    "buffer_enabled": buffer_enabled
     }
 
     print(f"Game started: {game_id} with {len(players)} players(s)")
@@ -359,6 +364,15 @@ def get_session(session_code):
 
     lobby = lobby_sessions[session_code]
 
+    game_id = lobby.get("game_id")
+    question_time = 30
+    buffer_enabled = True
+
+    if game_id and game_id in game_sessions:
+        game = game_sessions[game_id]
+        question_time = game.get("question_time", 30)
+        buffer_enabled = game.get("buffer_enabled", True)
+
     return jsonify({
         "success": True,
         "session_code": lobby["session_code"],
@@ -366,7 +380,9 @@ def get_session(session_code):
         "bank_id": lobby["bank_id"],
         "players": lobby["players"],
         "started": lobby.get("started", False),
-        "game_id": lobby.get("game_id")
+        "game_id": game_id,
+        "question_time": question_time,
+        "buffer_enabled": buffer_enabled
     })
 
 
@@ -384,11 +400,15 @@ def start_session(session_code):
     if lobby.get("started"):
         return jsonify({"success": True, "message": "Game already started", "game_id": lobby.get("game_id")})
 
+    data = request.get_json() or {}
+
     # I reuse Daniel's handle_start_game flow so we don't rewrite the core logic.
     payload = {
         "session_code": session_code,
         "players": lobby.get("players", []),
-        "bank_id": lobby.get("bank_id")
+        "bank_id": lobby.get("bank_id"),
+        "question_time": data.get("question_time", 30),
+        "buffer_enabled": data.get("buffer_enabled", True)
     }
 
     # JOSE PATCH: manually call the same logic by mimicking a request
