@@ -1,0 +1,74 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "backend/python/app.py",
+      "use": "@vercel/python",
+      "config": {
+        "includeFiles": ["backend/python/*.py", "db/*.json"]
+      }
+    },
+    {
+      "src": "frontend/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/start",
+      "dest": "backend/python/app.py"
+    },
+    {
+      "src": "/session/(.*)",
+      "dest": "backend/python/app.py"
+    },
+    {
+      "src": "/game/(.*)",
+      "dest": "backend/python/app.py"
+    },
+    {
+      "src": "/results/(.*)",
+      "dest": "backend/python/app.py"
+    },
+    {
+      "src": "/questions",
+      "dest": "backend/python/app.py"
+    },
+    {
+      "src": "/question_banks",
+      "dest": "backend/python/app.py"
+    },
+    {
+      "src": "/host.html",
+      "dest": "frontend/host.html"
+    },
+    {
+      "src": "/player.html",
+      "dest": "frontend/player.html"
+    },
+    {
+      "src": "/quiz.html",
+      "dest": "frontend/quiz.html"
+    },
+    {
+      "src": "/results.html",
+      "dest": "frontend/results.html"
+    },
+    {
+      "src": "/styles.css",
+      "dest": "frontend/styles.css"
+    },
+    {
+      "src": "/app.js",
+      "dest": "frontend/app.js"
+    },
+    {
+      "src": "/index.html",
+      "dest": "frontend/index.html"
+    },
+    {
+      "src": "/",
+      "dest": "frontend/index.html"
+    }
+  ]
+}

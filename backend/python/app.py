@@ -1,3 +1,8 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(__file__))
+
+
 # Using Flask since it helps connects Python to websites, and using jsonify since it translates Python data for websites.
 from flask import Flask, request, jsonify
 
@@ -14,13 +19,17 @@ import os
 # Import to be used for selecting questions randomly each game.
 import random
 
+# Import for Upstash Redis (replaces in-memory storage for Vercel deployment)
+from upstash_redis import Redis
+
 # Import for scoring functions
 from calculateScoring import (
     save_score,
     calculate_final_score,
     calculate_how_right,
     calculate_how_wrong,
-    clear_results
+    clear_results,
+    time_multiplier  # Added to calculate time-based score multiplier
 )
 
 # ==============================================================================
@@ -37,7 +46,8 @@ from calculateScoring import (
 # NOTES:
 # - Scoring is integrated from teammate's calculateScoring.py
 # - Category filtering is NOT implemented yet (CS, Data Science, Cyber Security, IT)
-# - Game sessions are stored in memory (resets when server restarts)
+# - Game sessions are now stored in Upstash Redis (persists between requests on Vercel)
+#   Previously stored in memory (would reset when server restarts)
 # ==============================================================================
 
 # Creates the Flask application
@@ -46,12 +56,53 @@ app = Flask(__name__)
 # Enabling CORS in order for frontend to communicate with backend.
 CORS(app)
 
-# Stores the current game data
-game_sessions = {}
+# ==============================================================================
+# Upstash Redis connection
+# Replaces the old in-memory game_sessions and lobby_sessions dictionaries.
+# Those would reset on every request in Vercel's serverless environment.
+# Redis keeps the data alive between requests.
+# Credentials are stored as environment variables (set in Vercel dashboard).
+# ==============================================================================
+redis = Redis(
+    url=os.environ["UPSTASH_REDIS_REST_URL"],
+    token=os.environ["UPSTASH_REDIS_REST_TOKEN"]
+)
 
-# JOSE PATCH: lightweight lobby/session storage for Sprint 3 host flow
-# - This is separate from "game_sessions" because it represents pre-game state (host created session, players joined, etc.)
-lobby_sessions = {}
+# ==============================================================================
+# Time scoring constants
+# Agree on these values with your team if they need to change
+# QUESTION_TOTAL_TIME = total seconds allowed per question
+# QUESTION_TIME_SUBDIV = how many scoring brackets exist within that time
+# ==============================================================================
+QUESTION_TOTAL_TIME = 30
+QUESTION_TIME_SUBDIV = 4
+
+# ==============================================================================
+# Redis helper functions
+# These mimic the old dictionary behavior:
+#   OLD: game_sessions[game_id] = data
+#   NEW: set_game_session(game_id, data)
+#
+#   OLD: game_sessions[game_id]
+#   NEW: get_game_session(game_id)
+# Same pattern applies for lobby sessions below.
+# ==============================================================================
+
+def get_game_session(game_id):
+    data = redis.get(f"game:{game_id}")
+    return json.loads(data) if data else None
+
+def set_game_session(game_id, session_data):
+    # Sessions expire after 2 hours automatically
+    redis.set(f"game:{game_id}", json.dumps(session_data), ex=7200)
+
+def get_lobby_session(session_code):
+    data = redis.get(f"lobby:{session_code}")
+    return json.loads(data) if data else None
+
+def set_lobby_session(session_code, lobby_data):
+    # Sessions expire after 2 hours automatically
+    redis.set(f"lobby:{session_code}", json.dumps(lobby_data), ex=7200)
 
 
 # ==============================================================
@@ -62,13 +113,16 @@ lobby_sessions = {}
 QUESTION_BANK_FILES = {
     "cs": "cs_question_bank.json",
     "cybersec": "cybersec_question_bank.json",
+    "it": "information_technology_question_bank.json",
+    "datasci": "data_science_question_bank.json",
 }
 
 DEFAULT_BANK_ID = "cs"
 _question_bank_cache = {}
 
 def load_questions_from_db(filename):
-    backend_dir = os.path.dirname(__file__)
+    # Go up two levels: backend/python -> backend -> root, then into db/
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
     json_path = os.path.join(backend_dir, "..", "..", "db", filename)
 
     with open(json_path, "r", encoding="utf-8") as f:
@@ -94,6 +148,8 @@ def question_banks():
     banks = [
         {"id": "cs", "label": "Computer Science"},
         {"id": "cybersec", "label": "Cybersecurity"},
+        {"id": "it", "label": "Information Technology"},
+        {"id": "datasci", "label": "Data Science"},
     ]
     return jsonify({"default": DEFAULT_BANK_ID, "banks": banks})
 
@@ -103,34 +159,39 @@ def _generate_session_code(length=6):
     alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     while True:
         code = "".join(random.choice(alphabet) for _ in range(length))
-        if code not in lobby_sessions:
+        # Check Redis instead of old in-memory lobby_sessions dict
+        if get_lobby_session(code) is None:
             return code
 
 
 # ====================================================================
-# Manage answer validation (Checks if the answer selected is correct
+# Manage answer validation (Checks if the answer selected is correct)
 # ====================================================================
-# NEEDS FRONTEND TO SEND QUESTION ID AND ANSWER CHOICE 
-# NOTE: Scoring not implemented here.
+# NEEDS FRONTEND TO SEND:
+#   - question_id  : the question ID e.g. "E001"
+#   - answer_index : 0, 1, 2, or 3
+#   - player       : player name
+#   - currTime     : seconds remaining on timer when player answered
 
 @app.route('/game/<game_id>/submit', methods=['POST'])
 def submit_answer(game_id):
-    """ Checks if selected answer from frontend is correct (scoring handled elsewhere)"""
+    """Checks if selected answer from frontend is correct (scoring handled elsewhere)"""
 
-    if game_id not in game_sessions:
+    # Fetch game from Redis instead of old in-memory game_sessions dict
+    game = get_game_session(game_id)
+    if game is None:
         return jsonify({
             "success": False,
             "message": "Game not found"
         }), 404
 
-    game = game_sessions[game_id]
     data = request.get_json()
-    
-    user_answer = data.get("answer_index") # 0, 1, 2, or 3
-    question_id = data.get("question_id") # "E001" and so on
-    player = data.get("player") # Player name for scoring
 
-    #Find question from question bank
+    user_answer = data.get("answer_index") # 0, 1, 2, or 3
+    question_id = data.get("question_id")  # "E001" and so on
+    player = data.get("player")            # Player name for scoring
+
+    # Find question from question bank
     question = None
     for i in game["questions"]:
         if i["id"] == question_id:
@@ -140,7 +201,7 @@ def submit_answer(game_id):
     # Question found or not check
     if question is None:
         return jsonify({
-            "success": False, 
+            "success": False,
             "message": "Question not found"
         })
 
@@ -150,7 +211,30 @@ def submit_answer(game_id):
 
     # Scoring integration
     if player:
-        save_score(player, is_correct) # True = 1 point, False = 0 points
+        # Frontend sends currTime (seconds remaining when player answered)
+        # First tries time_multiplier from calculateScoring.py
+        # Falls back to quarter system if currTime doesn't land exactly on a bracket
+        # Score is ALWAYS saved regardless
+        curr_time = data.get("currTime")
+
+        if curr_time is not None:
+            # Try to get multiplier from time bracket
+            mult = time_multiplier(QUESTION_TOTAL_TIME, QUESTION_TIME_SUBDIV, curr_time)
+            # If currTime doesn't land exactly on a bracket value use quarter fallback
+            if mult is None:
+                if curr_time >= 22.5:
+                    mult = 1.0
+                elif curr_time >= 15:
+                    mult = 0.75
+                elif curr_time >= 7.5:
+                    mult = 0.50
+                else:
+                    mult = 0.25
+        else:
+            # If frontend hasn't sent currTime yet default to full multiplier
+            mult = 1.0
+
+        save_score(player, is_correct, mult) # score weighted by how fast they answered
 
     # Return results for a proper translation for the site to read them. (Python uses "True" while website uses "true")
     return jsonify({
@@ -169,21 +253,21 @@ def submit_answer(game_id):
 @app.route('/start', methods=['POST'])
 def handle_start_game():
     """Creates a new session when Start button is clicked"""
-    
+
     # Get the game settings sent from the website
     data = request.get_json() or {}
     bank_request = data.get("bank_id")  # "cs" or "cybersec"
     bank_id, active_bank = get_question_bank(bank_request)
 
-    question_time = data.get("question_time", 30)
-    buffer_enabled = data.get("buffer_enabled", True)
-    
     session_code = data.get('session_code')
     players = data.get('players', [])
 
     # JOSE PATCH: if frontend did not send players, try using lobby session players
-    if session_code and (not players or len(players) == 0) and session_code in lobby_sessions:
-        players = lobby_sessions[session_code].get("players", [])
+    # Now fetches from Redis instead of old in-memory lobby_sessions dict
+    if session_code and (not players or len(players) == 0):
+        lobby = get_lobby_session(session_code)
+        if lobby:
+            players = lobby.get("players", [])
 
     # Validate required data
     if not session_code:
@@ -208,23 +292,24 @@ def handle_start_game():
     num_questions = min(10, len(active_bank))
     selected_questions = random.sample(active_bank, num_questions)
 
-    # Store game session
-    game_sessions[game_id] = {
-    "game_id": game_id,
-    "session_code": session_code,
-    "players": players,
-    "bank_id": bank_id,
-    "questions": selected_questions,
-    "question_time": question_time,
-    "buffer_enabled": buffer_enabled
-    }
+    # Store game session in Redis instead of old in-memory game_sessions dict
+    set_game_session(game_id, {
+        "game_id": game_id,
+        "session_code": session_code,
+        "players": players,
+        "bank_id": bank_id,
+        "questions": selected_questions,
+    })
 
     print(f"Game started: {game_id} with {len(players)} players(s)")
 
     # JOSE PATCH: attach game_id to lobby session (helps the host page poll and redirect players)
-    if session_code in lobby_sessions:
-        lobby_sessions[session_code]["game_id"] = game_id
-        lobby_sessions[session_code]["started"] = True
+    # Now updates Redis instead of old in-memory lobby_sessions dict
+    lobby = get_lobby_session(session_code)
+    if lobby:
+        lobby["game_id"] = game_id
+        lobby["started"] = True
+        set_lobby_session(session_code, lobby)
 
     # Send a response back to the website
     return jsonify({
@@ -245,13 +330,13 @@ def handle_start_game():
 def get_game_questions(game_id):
     """Returns questions for a game"""
 
-    if game_id not in game_sessions:
+    # Fetch game from Redis instead of old in-memory game_sessions dict
+    game = get_game_session(game_id)
+    if game is None:
         return jsonify({
             "success": False,
             "message": "Game not found"
         }), 404
-        
-    game = game_sessions[game_id]
 
     return jsonify({
         "success": True,
@@ -269,10 +354,13 @@ def questions_alias():
     game_id = request.args.get("game_id")
 
     # If they passed session_code instead, map it to the started game's id (Sprint 3 host flow)
+    # Now fetches from Redis instead of old in-memory lobby_sessions dict
     if not game_id:
         session_code = request.args.get("session_code")
-        if session_code and session_code in lobby_sessions:
-            game_id = lobby_sessions[session_code].get("game_id")
+        if session_code:
+            lobby = get_lobby_session(session_code.upper())
+            if lobby:
+                game_id = lobby.get("game_id")
 
     if not game_id:
         return jsonify({
@@ -304,21 +392,24 @@ def create_session():
 
     session_code = _generate_session_code()
 
-    lobby_sessions[session_code] = {
+    lobby_data = {
         "session_code": session_code,
         "host": host,
         "bank_id": bank_id,
-        "players": [host],   # I’m counting host as present in the lobby (easy for display and consistency)
+        "players": [host],   # I'm counting host as present in the lobby (easy for display and consistency)
         "started": False,
         "game_id": None
     }
+
+    # Store lobby in Redis instead of old in-memory lobby_sessions dict
+    set_lobby_session(session_code, lobby_data)
 
     return jsonify({
         "success": True,
         "session_code": session_code,
         "host": host,
         "bank_id": bank_id,
-        "players": lobby_sessions[session_code]["players"]
+        "players": lobby_data["players"]
     })
 
 
@@ -334,16 +425,19 @@ def join_session():
         return jsonify({"success": False, "message": "Session code is required"}), 400
     if not player:
         return jsonify({"success": False, "message": "Player name is required"}), 400
-    if session_code not in lobby_sessions:
-        return jsonify({"success": False, "message": "Session not found"}), 404
 
-    lobby = lobby_sessions[session_code]
+    # Fetch lobby from Redis instead of old in-memory lobby_sessions dict
+    lobby = get_lobby_session(session_code)
+    if lobby is None:
+        return jsonify({"success": False, "message": "Session not found"}), 404
 
     if lobby.get("started"):
         return jsonify({"success": False, "message": "Game already started"}), 409
 
     if player not in lobby["players"]:
         lobby["players"].append(player)
+        # Save updated lobby back to Redis
+        set_lobby_session(session_code, lobby)
 
     return jsonify({
         "success": True,
@@ -359,19 +453,10 @@ def get_session(session_code):
 
     session_code = (session_code or "").strip().upper()
 
-    if session_code not in lobby_sessions:
+    # Fetch lobby from Redis instead of old in-memory lobby_sessions dict
+    lobby = get_lobby_session(session_code)
+    if lobby is None:
         return jsonify({"success": False, "message": "Session not found"}), 404
-
-    lobby = lobby_sessions[session_code]
-
-    game_id = lobby.get("game_id")
-    question_time = 30
-    buffer_enabled = True
-
-    if game_id and game_id in game_sessions:
-        game = game_sessions[game_id]
-        question_time = game.get("question_time", 30)
-        buffer_enabled = game.get("buffer_enabled", True)
 
     return jsonify({
         "success": True,
@@ -388,33 +473,62 @@ def get_session(session_code):
 
 @app.route('/session/<session_code>/start', methods=['POST'])
 def start_session(session_code):
-    """Starts the game from the lobby (host page). This calls Daniel's /start logic."""
+    """Starts the game from the lobby (host page)."""
 
     session_code = (session_code or "").strip().upper()
 
-    if session_code not in lobby_sessions:
+    # Fetch lobby from Redis instead of old in-memory lobby_sessions dict
+    lobby = get_lobby_session(session_code)
+    if lobby is None:
         return jsonify({"success": False, "message": "Session not found"}), 404
-
-    lobby = lobby_sessions[session_code]
 
     if lobby.get("started"):
         return jsonify({"success": True, "message": "Game already started", "game_id": lobby.get("game_id")})
 
-    data = request.get_json() or {}
+    # Directly calling the start game logic instead of app.test_request_context
+    # (test_request_context does not work reliably in Vercel's serverless environment)
+    bank_id, active_bank = get_question_bank(lobby.get("bank_id"))
+    players = lobby.get("players", [])
 
-    # I reuse Daniel's handle_start_game flow so we don't rewrite the core logic.
-    payload = {
+    if not players or len(players) == 0:
+        return jsonify({
+            "success": False,
+            "message": "At least one player is required"
+        }), 400
+
+    # Clear previous results
+    clear_results()
+
+    # Generation of unique game ID
+    game_id = str(uuid.uuid4())
+
+    # Selection of ten random questions
+    num_questions = min(10, len(active_bank))
+    selected_questions = random.sample(active_bank, num_questions)
+
+    # Store game session in Redis
+    set_game_session(game_id, {
+        "game_id": game_id,
         "session_code": session_code,
-        "players": lobby.get("players", []),
-        "bank_id": lobby.get("bank_id"),
-        "question_time": data.get("question_time", 30),
-        "buffer_enabled": data.get("buffer_enabled", True)
-    }
+        "players": players,
+        "bank_id": bank_id,
+        "questions": selected_questions,
+    })
 
-    # JOSE PATCH: manually call the same logic by mimicking a request
-    # (keeps Daniel’s core behavior intact)
-    with app.test_request_context('/start', method='POST', json=payload):
-        return handle_start_game()
+    # JOSE PATCH: attach game_id to lobby session (helps the host page poll and redirect players)
+    lobby["game_id"] = game_id
+    lobby["started"] = True
+    set_lobby_session(session_code, lobby)
+
+    # Send a response back to the website
+    return jsonify({
+        "success": True,
+        "game_id": game_id,
+        "session_code": session_code,
+        "question_count": num_questions,
+        "players": players,
+        "message": "The game started properly."
+    })
 
 
 # ===========================================
@@ -434,7 +548,7 @@ def get_results(player):
             "player": player,
             "correct": correct,
             "wrong": wrong,
-            "final_score": final_score
+            "final_score": round(final_score, 2)
         })
     except:
         return jsonify({
@@ -454,4 +568,3 @@ if __name__ == '__main__':
     print("Server running on http://localhost:5000")
     # Start Flask server on port 5000 with debug mode on
     app.run(debug=True, port=5000)
-
