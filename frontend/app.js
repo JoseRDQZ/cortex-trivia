@@ -10,7 +10,7 @@
  * - I want the backend contract to be flexible while teammates iterate (support old + new endpoints).
  */
 
-const API_BASE = "";
+const API_BASE = "http://127.0.0.1:5000";
 
 // I store state in sessionStorage so each browser window can act independently (host vs player).
 const STORAGE_KEY = "cortex_demo_state_v2";
@@ -507,29 +507,41 @@ function initQuiz() {
 
     answersEl.innerHTML = "";
 
-    q.choices.forEach((choiceText, i) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "answer";
-      btn.textContent = choiceText;
+    answersEl.innerHTML = "";
 
-      btn.addEventListener("click", () => {
-        if (submitted) return;
+// create array of indexes [0,1,2,3]
+let displayIndexes = q.choices.map((_, i) => i);
 
-        selectedAnswerIndex = i;
+// Fisher-Yates shuffle
+for (let i = displayIndexes.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1));
+  [displayIndexes[i], displayIndexes[j]] = [displayIndexes[j], displayIndexes[i]];
+}
 
-        Array.from(answersEl.querySelectorAll("button.answer")).forEach((b) => {
-          b.classList.remove("selected");
-        });
+// render shuffled answers
+displayIndexes.forEach((idx) => {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "answer";
+  btn.textContent = q.choices[idx];
 
-        btn.classList.add("selected");
+  btn.addEventListener("click", () => {
+    if (submitted) return;
 
-        submitBtn.disabled = false;
-        setQuizStatus("Selection ready. Press Submit.");
-      });
+    selectedAnswerIndex = idx; // ✅ original index
 
-      answersEl.appendChild(btn);
+    Array.from(answersEl.querySelectorAll("button.answer")).forEach((b) => {
+      b.classList.remove("selected");
     });
+
+    btn.classList.add("selected");
+
+    submitBtn.disabled = false;
+    setQuizStatus("Selection ready. Press Submit.");
+  });
+
+  answersEl.appendChild(btn);
+});
 
     // BUFFER: hide answers for 5 seconds
     answersEl.style.visibility = "hidden";
@@ -747,4 +759,3 @@ document.addEventListener("DOMContentLoaded", () => {
   if ($("questionText") && $("answers")) initQuiz();
   if ($("backToLobbyBtn") || $("resultsStatus")) initResults();
 });
-
