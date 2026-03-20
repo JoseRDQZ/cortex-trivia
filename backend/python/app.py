@@ -465,7 +465,7 @@ def get_session(session_code):
         "bank_id": lobby["bank_id"],
         "players": lobby["players"],
         "started": lobby.get("started", False),
-        "game_id": game_id,
+        "game_id": lobby.get("game_id"),
         "question_time": question_time,
         "buffer_enabled": buffer_enabled
     })
