@@ -10,7 +10,7 @@
  * - I want the backend contract to be flexible while teammates iterate (support old + new endpoints).
  */
 
-const API_BASE = "";
+const API_BASE = "http://127.0.0.1:5000";
 
 // I store state in sessionStorage so each browser window can act independently (host vs player).
 const STORAGE_KEY = "cortex_demo_state_v2";
@@ -40,9 +40,7 @@ function defaultState() {
     active_player: "",     // current player name (player page / quiz)
     game_id: "",           // backend game id
     questions: [],         // cached question set
-    idx: 0,                 // current question index
-    question_time: 30,   //default
-    buffer_enabled: true //default
+    idx: 0                 // current question index
   };
 }
 
@@ -270,53 +268,6 @@ function initHost() {
 
   let state = loadState() || defaultState();
 
-  function syncControlUI() {
-    const currentTime = state.question_time || 30;
-
-    document.querySelectorAll(".timer-btn").forEach((b) => {
-      b.classList.toggle("selected", Number(b.dataset.time) === currentTime);
-    });
-
-    const bufferOnBtn = $("bufferOn");
-    const bufferOffBtn = $("bufferOff");
-
-    bufferOnBtn?.classList.toggle("selected", !!state.buffer_enabled);
-    bufferOffBtn?.classList.toggle("selected", !state.buffer_enabled);
-  }
-  // ==============================
-  // NEW: Timer + Buffer Controls
-  // ==============================
-
-  // Question timer buttons
-  document.querySelectorAll(".timer-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const val = Number(btn.dataset.time);
-      state.question_time = val;
-      saveState(state);
-      syncControlUI();
-      render();
-
-      setStatus("hostStatus", `Question timer set to ${val}s`);
-    });
-  });
-
-  // Buffer toggle
-  $("bufferOn")?.addEventListener("click", () => {
-    state.buffer_enabled = true;
-    saveState(state);
-    render();
-
-    setStatus("hostStatus", "Buffer timer enabled");
-  });
-
-  $("bufferOff")?.addEventListener("click", () => {
-    state.buffer_enabled = false;
-    saveState(state);
-    render();
-
-    setStatus("hostStatus", "Buffer timer disabled");
-  });
-
   // If I got here without a host session, I want a clear message instead of silent failure.
   if (state.role !== "host" || !state.session_code) {
     setText("hostSessionCode", "—");
@@ -330,8 +281,6 @@ function initHost() {
     setText("hostSessionCode", state.session_code || "—");
     setText("hostBank", state.bank_id || "—");
     setText("hostPlayers", state.players.length ? state.players.join(", ") : "Waiting for players…");
-    
-    syncControlUI();
   }
 
   async function refreshSession() {
@@ -387,10 +336,7 @@ function initHost() {
       try {
         resp = await tryPost(
           [`/session/${encodeURIComponent(state.session_code)}/start`],
-          {
-            question_time: state.question_time,
-            buffer_enabled: state.buffer_enabled
-          }
+          {}
         );
       } catch {
         resp = await tryPost(
@@ -398,9 +344,7 @@ function initHost() {
           {
             session_code: state.session_code,
             players: state.players,
-            bank_id: state.bank_id,
-            question_time: state.question_time,
-            buffer_enabled: state.buffer_enabled
+            bank_id: state.bank_id
           }
         );
       }
@@ -517,14 +461,16 @@ function initQuiz() {
   const nextBtn = $("nextBtn");
   const timerEl = $("timer"); // optional element to show countdown
 
+  const QUESTION_TIME = 30; // seconds per question
+  const BUFFER_TIME = 5;
   let interval = null;       // stores setInterval for countdown display
-  let currentTimeRemaining = 0;
+  let currentTimeRemaining = QUESTION_TIME;
   let bufferInterval = null;
 
 
   if (!questionText || !answersEl || !statusEl || !progressPill || !submitBtn || !nextBtn) return;
 
- let state = loadState() || defaultState();
+  let state = loadState() || defaultState();
 
   if (!state.game_id) {
     setText("questionText", "No active game found.");
@@ -602,114 +548,86 @@ displayIndexes.forEach((idx) => {
 
     submitBtn.disabled = true;
     nextBtn.disabled = true;
+    setQuizStatus("Get ready...");
 
-    function startQuestionTimer() {
-      answersEl.style.visibility = "visible";
-      setQuizStatus("Pick an answer.");
+    // --- BUFFER TIMER FIRST ---
+    let bufferRemaining = BUFFER_TIME;
 
-      const questionTime = state.question_time || 30;
-      let remaining = questionTime;
-      currentTimeRemaining = questionTime;
+    if (timerEl) timerEl.textContent = ` ${bufferRemaining}`;
+    bufferInterval = setInterval(() => {
 
-      if (timerEl) timerEl.textContent = ` ${remaining}`;
-
-      interval = setInterval(async () => {
-        remaining = Math.max(remaining - 1, 0);
-        currentTimeRemaining = remaining;
-
-        if (timerEl) timerEl.textContent = ` ${remaining}`;
-
-        if (remaining === 0) {
-          clearInterval(interval);
-
-          if (!submitted) {
-            submitted = true;
-            submitBtn.disabled = true;
-
-            setQuizStatus("Time's up! Auto-submitting...");
-
-            const q = state.questions[state.idx];
-
-            try {
-              const resp = await apiRequest(
-                `/game/${encodeURIComponent(state.game_id)}/submit`,
-                {
-                  method: "POST",
-                  body: {
-                    question_id: q.id,
-                    answer_index: selectedAnswerIndex ?? -1,
-                    player: state.active_player || state.players[0] || "Player",
-                    currTime: currentTimeRemaining
-                  }
-                }
-              );
-
-              if (resp.is_correct === true) {
-                setQuizStatus("Correct ✅");
-              } else {
-                setQuizStatus(`Wrong ❌ (Correct: ${resp.correct_text})`);
-              }
-
-              nextBtn.disabled = false;
-
-            } catch (err) {
-              console.error(err);
-              setQuizStatus(`Auto-submit failed: ${err.message}`);
-              submitted = false;
-              submitBtn.disabled = false;
-            }
-          }
-        }
-      }, 1000);
-    }
-
-    // ===== BUFFER HANDLING =====
-    const bufferTime = state.buffer_enabled ? 5 : 0;
-
-    if (bufferTime > 0) {
-      answersEl.style.visibility = "hidden";
-      setQuizStatus("Get ready...");
-
-      let bufferRemaining = bufferTime;
-
+      bufferRemaining--;
+      
       if (timerEl) timerEl.textContent = ` ${bufferRemaining}`;
 
-      bufferInterval = setInterval(() => {
-        bufferRemaining--;
+      if (bufferRemaining <= 0){
+        clearInterval(bufferInterval);
 
-        if (timerEl) timerEl.textContent = ` ${bufferRemaining}`;
+        answersEl.style.visibility = "visible";
+        setQuizStatus("Pick an answer.");
+      
+    
+        // --- START TIMER ---
+        let remaining = QUESTION_TIME;
+        currentTimeRemaining = QUESTION_TIME;
 
-        if (bufferRemaining <= 0) {
-          clearInterval(bufferInterval);
-          startQuestionTimer();
-        }
-      }, 1000);
+        if (timerEl) timerEl.textContent = ` ${QUESTION_TIME}`;
 
-    } else {
-      startQuestionTimer();
-    }
-  }
+        interval = setInterval(async () => {
 
-  async function syncFromSession() {
-  const resp = await tryGet([`/session/${encodeURIComponent(state.session_code)}`]);
+          remaining = Math.max(remaining - 1, 0);
+          currentTimeRemaining = remaining;
 
-  // merge backend → frontend
-  state = {
-    ...state,
-    ...resp
-  };
+          if (timerEl) timerEl.textContent = ` ${remaining}`;
 
-  saveState(state);
+          if (remaining === 0) {
+            clearInterval(interval);
+
+            if (!submitted) {
+              submitted = true;
+              submitBtn.disabled = true;
+
+              setQuizStatus("Time's up! Auto-submitting...");
+
+              const q = state.questions[state.idx];
+
+              try {
+                const resp = await apiRequest(
+                  `/game/${encodeURIComponent(state.game_id)}/submit`, 
+                  {
+                    method: "POST",
+                    body: {
+                      question_id: q.id,
+                      answer_index: selectedAnswerIndex ?? -1,
+                      player: state.active_player || state.players[0] || "Player",
+                      currTime: currentTimeRemaining
+                    }
+                  }
+                );
+
+                if (resp.is_correct === true) {
+                  setQuizStatus("Correct ✅");
+                } else {
+                  setQuizStatus(`Wrong ❌ (Correct: ${resp.correct_text})`);
+                }
+
+                nextBtn.disabled = false;
+
+              } catch (err) {
+                console.error(err);
+                setQuizStatus(`Auto-submit failed: ${err.message}`);
+        
+                submitted = false;
+                submitBtn.disabled = false;
+              }
+            }
+          }
+        }, 1000);
+      }
+    }, 1000);
   }
   
   async function loadQuestionsIfNeeded() {
-    const latest = loadState();
-    if (latest) state = latest;
-
-    if (!state.game_id) {
-      throw new Error("Missing game_id. Game was not started properly.");
-    }
-
     if (Array.isArray(state.questions) && state.questions.length > 0) return;
 
     setQuizStatus("Fetching questions from backend…");
@@ -784,7 +702,6 @@ displayIndexes.forEach((idx) => {
 
   (async () => {
     try {
-      await syncFromSession();
       await loadQuestionsIfNeeded();
       renderQuestion();
     } catch (err) {
