@@ -70,3 +70,30 @@ body{ margin:0; background:var(--bg); color:var(--text); }
   line-height: 1.1;
 }
 
+/* === Timer + Buffer Selection UI === */
+.timer-btn,
+#bufferOn,
+#bufferOff {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  margin: 4px;
+  cursor: pointer;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  transition: all 0.2s ease;
+}
+
+.timer-btn:hover,
+#bufferOn:hover,
+#bufferOff:hover {
+  border-color: var(--primary);
+}
+
+.timer-btn.selected,
+#bufferOn.selected,
+#bufferOff.selected {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
