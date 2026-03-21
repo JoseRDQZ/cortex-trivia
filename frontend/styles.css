@@ -69,3 +69,32 @@ body{ margin:0; background:var(--bg); color:var(--text); }
   font-weight: 700;
   line-height: 1.1;
 }
+
+/* === Timer + Buffer Selection UI (added from classmate's version) === */
+.timer-btn,
+#bufferOn,
+#bufferOff {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  margin: 4px;
+  cursor: pointer;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  transition: all 0.2s ease;
+}
+
+.timer-btn:hover,
+#bufferOn:hover,
+#bufferOff:hover {
+  border-color: var(--primary);
+}
+
+/* Highlights the currently selected timer/buffer button */
+.timer-btn.selected,
+#bufferOn.selected,
+#bufferOff.selected {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
