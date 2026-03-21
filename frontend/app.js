@@ -2,15 +2,15 @@
  * Cortex Trivia — Frontend Integration (Sprint 2 + Sprint 3)
  *
  * Jose Rodriguez (me):
- * - I’m keeping the existing Sprint 2 demo flow stable (Lobby → Quiz → Results).
- * - I’m adding Sprint 3 scaffolding (Host page + Player page) without rewriting what already works.
+ * - I'm keeping the existing Sprint 2 demo flow stable (Lobby → Quiz → Results).
+ * - I'm adding Sprint 3 scaffolding (Host page + Player page) without rewriting what already works.
  *
- * Why I’m doing it this way:
- * - I want the UI to be testable at every step (no “big bang” refactor right before a demo).
+ * Why I'm doing it this way:
+ * - I want the UI to be testable at every step (no "big bang" refactor right before a demo).
  * - I want the backend contract to be flexible while teammates iterate (support old + new endpoints).
  */
 
-const API_BASE = "";
+const API_BASE = ""; // Keep empty for Vercel (classmate used localhost, we don't)
 
 // I store state in sessionStorage so each browser window can act independently (host vs player).
 const STORAGE_KEY = "cortex_demo_state_v2";
@@ -40,7 +40,9 @@ function defaultState() {
     active_player: "",     // current player name (player page / quiz)
     game_id: "",           // backend game id
     questions: [],         // cached question set
-    idx: 0                 // current question index
+    idx: 0,                // current question index
+    question_time: 30,     // host-customizable seconds per question (added from classmate)
+    buffer_enabled: true   // host-customizable buffer toggle (added from classmate)
   };
 }
 
@@ -159,7 +161,7 @@ function initLobby() {
 
     setStatus("statusText", "Creating session…");
 
-    // I reset state so a previous game_id doesn’t leak into a new session.
+    // I reset state so a previous game_id doesn't leak into a new session.
     state = defaultState();
     state.role = "host";
     state.active_player = hostName;
@@ -262,11 +264,65 @@ function initLobby() {
    IDs used:
    - hostSessionCode, hostBank, hostPlayers, hostStatus
    - hostStartBtn, hostBackBtn, copyCodeBtn
+   - .timer-btn (buttons with data-time attribute for timer selection)
+   - bufferOn, bufferOff (buttons to toggle buffer)
 ========================================================= */
 function initHost() {
   if (!$("hostStartBtn")) return;
 
   let state = loadState() || defaultState();
+
+  // ==============================================================
+  // syncControlUI: visually highlights the active timer/buffer btn
+  // Added from classmate's version for host timer controls
+  // ==============================================================
+  function syncControlUI() {
+    const currentTime = state.question_time || 30;
+
+    document.querySelectorAll(".timer-btn").forEach((b) => {
+      b.classList.toggle("selected", Number(b.dataset.time) === currentTime);
+    });
+
+    const bufferOnBtn = $("bufferOn");
+    const bufferOffBtn = $("bufferOff");
+
+    bufferOnBtn?.classList.toggle("selected", !!state.buffer_enabled);
+    bufferOffBtn?.classList.toggle("selected", !state.buffer_enabled);
+  }
+
+  // ==============================================================
+  // Timer buttons: host clicks to set question time (e.g. 15s, 30s)
+  // Each button needs data-time="15" (or whatever value) in HTML
+  // Added from classmate's version
+  // ==============================================================
+  document.querySelectorAll(".timer-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const val = Number(btn.dataset.time);
+      state.question_time = val;
+      saveState(state);
+      syncControlUI();
+      render();
+      setStatus("hostStatus", `Question timer set to ${val}s`);
+    });
+  });
+
+  // ==============================================================
+  // Buffer toggle: host enables or disables the pre-question buffer
+  // Added from classmate's version
+  // ==============================================================
+  $("bufferOn")?.addEventListener("click", () => {
+    state.buffer_enabled = true;
+    saveState(state);
+    render();
+    setStatus("hostStatus", "Buffer timer enabled");
+  });
+
+  $("bufferOff")?.addEventListener("click", () => {
+    state.buffer_enabled = false;
+    saveState(state);
+    render();
+    setStatus("hostStatus", "Buffer timer disabled");
+  });
 
   // If I got here without a host session, I want a clear message instead of silent failure.
   if (state.role !== "host" || !state.session_code) {
@@ -281,6 +337,7 @@ function initHost() {
     setText("hostSessionCode", state.session_code || "—");
     setText("hostBank", state.bank_id || "—");
     setText("hostPlayers", state.players.length ? state.players.join(", ") : "Waiting for players…");
+    syncControlUI(); // keep timer/buffer buttons in sync on every render
   }
 
   async function refreshSession() {
@@ -288,7 +345,7 @@ function initHost() {
     try {
       const resp = await tryGet([`/session/${encodeURIComponent(state.session_code)}`]);
 
-      // Normalize into state (don’t assume backend field names).
+      // Normalize into state (don't assume backend field names).
       state.players = resp.players || state.players;
       state.bank_id = resp.bank_id || state.bank_id;
 
@@ -329,22 +386,28 @@ function initHost() {
     setStatus("hostStatus", "Starting game…");
 
     try {
-      // Preferred (Sprint 3): /session/<code>/start
-      // Fallback: /start
       let resp = null;
 
       try {
+        // Preferred (Sprint 3): /session/<code>/start
+        // Now sends question_time and buffer_enabled to backend (added from classmate)
         resp = await tryPost(
           [`/session/${encodeURIComponent(state.session_code)}/start`],
-          {}
+          {
+            question_time: state.question_time,
+            buffer_enabled: state.buffer_enabled
+          }
         );
       } catch {
+        // Fallback: /start also sends time settings (added from classmate)
         resp = await tryPost(
           ["/start"],
           {
             session_code: state.session_code,
             players: state.players,
-            bank_id: state.bank_id
+            bank_id: state.bank_id,
+            question_time: state.question_time,
+            buffer_enabled: state.buffer_enabled
           }
         );
       }
@@ -360,7 +423,7 @@ function initHost() {
       render();
 
       setStatus("hostStatus", `Game started (game_id: ${gameId}).`);
-      // Host does NOT auto-open quiz; host is a “monitor” page by design.
+      // Host does NOT auto-open quiz; host is a "monitor" page by design.
     } catch (err) {
       setStatus("hostStatus", `Start failed: ${err.message}`);
     }
@@ -461,12 +524,9 @@ function initQuiz() {
   const nextBtn = $("nextBtn");
   const timerEl = $("timer"); // optional element to show countdown
 
-  const QUESTION_TIME = 30; // seconds per question
-  const BUFFER_TIME = 5;
   let interval = null;       // stores setInterval for countdown display
-  let currentTimeRemaining = QUESTION_TIME;
+  let currentTimeRemaining = 0;
   let bufferInterval = null;
-
 
   if (!questionText || !answersEl || !statusEl || !progressPill || !submitBtn || !nextBtn) return;
 
@@ -507,23 +567,29 @@ function initQuiz() {
 
     answersEl.innerHTML = "";
 
-    q.choices.forEach((choiceText, i) => {
+    // Fisher-Yates shuffle (kept from your version)
+    let displayIndexes = q.choices.map((_, i) => i);
+    for (let i = displayIndexes.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [displayIndexes[i], displayIndexes[j]] = [displayIndexes[j], displayIndexes[i]];
+    }
+
+    displayIndexes.forEach((idx) => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "answer";
-      btn.textContent = choiceText;
+      btn.textContent = q.choices[idx];
 
       btn.addEventListener("click", () => {
         if (submitted) return;
 
-        selectedAnswerIndex = i;
+        selectedAnswerIndex = idx; // original index preserved for correct answer checking
 
         Array.from(answersEl.querySelectorAll("button.answer")).forEach((b) => {
           b.classList.remove("selected");
         });
 
         btn.classList.add("selected");
-
         submitBtn.disabled = false;
         setQuizStatus("Selection ready. Press Submit.");
       });
@@ -531,91 +597,127 @@ function initQuiz() {
       answersEl.appendChild(btn);
     });
 
-    // BUFFER: hide answers for 5 seconds
-    answersEl.style.visibility = "hidden";
-
     submitBtn.disabled = true;
     nextBtn.disabled = true;
-    setQuizStatus("Get ready...");
 
-    // --- BUFFER TIMER FIRST ---
-    let bufferRemaining = BUFFER_TIME;
+    // ==============================================================
+    // startQuestionTimer: reads question_time from state so it
+    // respects whatever the host configured (added from classmate)
+    // ==============================================================
+    function startQuestionTimer() {
+      answersEl.style.visibility = "visible";
+      setQuizStatus("Pick an answer.");
 
-    if (timerEl) timerEl.textContent = ` ${bufferRemaining}`;
-    bufferInterval = setInterval(() => {
+      // Use host-configured time instead of hardcoded constant
+      const questionTime = state.question_time || 30;
+      let remaining = questionTime;
+      currentTimeRemaining = questionTime;
 
-      bufferRemaining--;
-      
-      if (timerEl) timerEl.textContent = ` ${bufferRemaining}`;
+      if (timerEl) timerEl.textContent = ` ${remaining}`;
 
-      if (bufferRemaining <= 0){
-        clearInterval(bufferInterval);
+      interval = setInterval(async () => {
+        remaining = Math.max(remaining - 1, 0);
+        currentTimeRemaining = remaining;
 
-        answersEl.style.visibility = "visible";
-        setQuizStatus("Pick an answer.");
-      
-    
-        // --- START TIMER ---
-        let remaining = QUESTION_TIME;
-        currentTimeRemaining = QUESTION_TIME;
+        if (timerEl) timerEl.textContent = ` ${remaining}`;
 
-        if (timerEl) timerEl.textContent = ` ${QUESTION_TIME}`;
+        if (remaining === 0) {
+          clearInterval(interval);
 
-        interval = setInterval(async () => {
+          if (!submitted) {
+            submitted = true;
+            submitBtn.disabled = true;
+            setQuizStatus("Time's up! Auto-submitting...");
 
-          remaining = Math.max(remaining - 1, 0);
-          currentTimeRemaining = remaining;
+            const q = state.questions[state.idx];
 
-          if (timerEl) timerEl.textContent = ` ${remaining}`;
-
-          if (remaining === 0) {
-            clearInterval(interval);
-
-            if (!submitted) {
-              submitted = true;
-              submitBtn.disabled = true;
-
-              setQuizStatus("Time's up! Auto-submitting...");
-
-              const q = state.questions[state.idx];
-
-              try {
-                const resp = await apiRequest(
-                  `/game/${encodeURIComponent(state.game_id)}/submit`, 
-                  {
-                    method: "POST",
-                    body: {
-                      question_id: q.id,
-                      answer_index: selectedAnswerIndex ?? -1,
-                      player: state.active_player || state.players[0] || "Player",
-                      currTime: currentTimeRemaining
-                    }
+            try {
+              const resp = await apiRequest(
+                `/game/${encodeURIComponent(state.game_id)}/submit`,
+                {
+                  method: "POST",
+                  body: {
+                    question_id: q.id,
+                    answer_index: selectedAnswerIndex ?? -1,
+                    player: state.active_player || state.players[0] || "Player",
+                    currTime: currentTimeRemaining
                   }
-                );
-
-                if (resp.is_correct === true) {
-                  setQuizStatus("Correct ✅");
-                } else {
-                  setQuizStatus(`Wrong ❌ (Correct: ${resp.correct_text})`);
                 }
+              );
 
-                nextBtn.disabled = false;
-
-              } catch (err) {
-                console.error(err);
-                setQuizStatus(`Auto-submit failed: ${err.message}`);
-        
-                submitted = false;
-                submitBtn.disabled = false;
+              if (resp.is_correct === true) {
+                setQuizStatus("Correct ✅");
+              } else {
+                setQuizStatus(`Wrong ❌ (Correct: ${resp.correct_text})`);
               }
+
+              nextBtn.disabled = false;
+            } catch (err) {
+              console.error(err);
+              setQuizStatus(`Auto-submit failed: ${err.message}`);
+              submitted = false;
+              submitBtn.disabled = false;
             }
           }
-        }, 1000);
-      }
-    }, 1000);
+        }
+      }, 1000);
+    }
+
+    // ==============================================================
+    // Buffer handling: respects host's buffer_enabled setting
+    // If buffer is off, skip straight to the question timer
+    // Added from classmate's version (replaces hardcoded BUFFER_TIME)
+    // ==============================================================
+    const bufferTime = state.buffer_enabled ? 5 : 0;
+
+    if (bufferTime > 0) {
+      answersEl.style.visibility = "hidden";
+      setQuizStatus("Get ready...");
+
+      let bufferRemaining = bufferTime;
+      if (timerEl) timerEl.textContent = ` ${bufferRemaining}`;
+
+      bufferInterval = setInterval(() => {
+        bufferRemaining--;
+        if (timerEl) timerEl.textContent = ` ${bufferRemaining}`;
+
+        if (bufferRemaining <= 0) {
+          clearInterval(bufferInterval);
+          startQuestionTimer();
+        }
+      }, 1000);
+    } else {
+      // Buffer disabled by host — go straight to question
+      startQuestionTimer();
+    }
   }
-  
+
+  // ==============================================================
+  // syncFromSession: pulls question_time + buffer_enabled from
+  // backend before quiz starts so player uses host's settings
+  // Added from classmate's version
+  // ==============================================================
+  async function syncFromSession() {
+    const resp = await tryGet([`/session/${encodeURIComponent(state.session_code)}`]);
+
+    // Merge backend response into state so question_time and buffer_enabled are up to date
+    state = {
+      ...state,
+      ...resp
+    };
+
+    saveState(state);
+  }
+
   async function loadQuestionsIfNeeded() {
+    // Re-read state in case syncFromSession updated it
+    const latest = loadState();
+    if (latest) state = latest;
+
+    if (!state.game_id) {
+      throw new Error("Missing game_id. Game was not started properly.");
+    }
+
     if (Array.isArray(state.questions) && state.questions.length > 0) return;
 
     setQuizStatus("Fetching questions from backend…");
@@ -640,7 +742,7 @@ function initQuiz() {
 
     const q = state.questions[state.idx];
     submitted = true;
-    clearTimers(); // <-- STOP timer when user submits
+    clearTimers(); // stop timer when user submits manually
     submitBtn.disabled = true;
 
     setQuizStatus("Submitting answer…");
@@ -675,7 +777,7 @@ function initQuiz() {
       return;
     }
 
-    clearTimers(); // clear previous timer before loading next question
+    clearTimers();
 
     state.idx += 1;
     saveState(state);
@@ -688,8 +790,11 @@ function initQuiz() {
     renderQuestion();
   });
 
+  // syncFromSession first so question_time and buffer_enabled are loaded
+  // before the first question renders (added from classmate's version)
   (async () => {
     try {
+      await syncFromSession();
       await loadQuestionsIfNeeded();
       renderQuestion();
     } catch (err) {
@@ -747,4 +852,3 @@ document.addEventListener("DOMContentLoaded", () => {
   if ($("questionText") && $("answers")) initQuiz();
   if ($("backToLobbyBtn") || $("resultsStatus")) initResults();
 });
-

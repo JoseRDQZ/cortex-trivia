@@ -2,7 +2,6 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
 
-
 # Using Flask since it helps connects Python to websites, and using jsonify since it translates Python data for websites.
 from flask import Flask, request, jsonify
 
@@ -48,6 +47,7 @@ from calculateScoring import (
 # - Category filtering is NOT implemented yet (CS, Data Science, Cyber Security, IT)
 # - Game sessions are now stored in Upstash Redis (persists between requests on Vercel)
 #   Previously stored in memory (would reset when server restarts)
+# - question_time and buffer_enabled added for host-customizable timer settings
 # ==============================================================================
 
 # Creates the Flask application
@@ -164,6 +164,37 @@ def _generate_session_code(length=6):
             return code
 
 
+# ==============================================================================
+# Shared game creation helper
+# Both /start and /session/<session_code>/start use this to avoid duplicate code.
+# Returns the game_id, num_questions, and players list on success.
+# ==============================================================================
+def _create_game(session_code, players, bank_id, question_time=30, buffer_enabled=True):
+    """Creates a game session in Redis and returns its details."""
+
+    bank_id, active_bank = get_question_bank(bank_id)
+    clear_results()
+
+    game_id = str(uuid.uuid4())
+    num_questions = min(10, len(active_bank))
+    selected_questions = random.sample(active_bank, num_questions)
+
+    # Store game session in Redis
+    # question_time and buffer_enabled come from the host's customizable settings
+    set_game_session(game_id, {
+        "game_id": game_id,
+        "session_code": session_code,
+        "players": players,
+        "bank_id": bank_id,
+        "questions": selected_questions,
+        "question_time": question_time,      # host-customizable timer (seconds per question)
+        "buffer_enabled": buffer_enabled     # host-customizable buffer between questions
+    })
+
+    print(f"Game started: {game_id} with {len(players)} player(s)")
+    return game_id, num_questions, players
+
+
 # ====================================================================
 # Manage answer validation (Checks if the answer selected is correct)
 # ====================================================================
@@ -249,15 +280,17 @@ def submit_answer(game_id):
 # Start Game Section
 # ==========================================================
 
-# When someone visits /start and sends data, run "handle_start_game()" which is below.
 @app.route('/start', methods=['POST'])
 def handle_start_game():
     """Creates a new session when Start button is clicked"""
 
-    # Get the game settings sent from the website
     data = request.get_json() or {}
-    bank_request = data.get("bank_id")  # "cs" or "cybersec"
-    bank_id, active_bank = get_question_bank(bank_request)
+    bank_request = data.get("bank_id")
+    bank_id, _ = get_question_bank(bank_request)
+
+    # Host-customizable timer settings (added from classmate's version)
+    question_time = data.get("question_time", 30)
+    buffer_enabled = data.get("buffer_enabled", True)
 
     session_code = data.get('session_code')
     players = data.get('players', [])
@@ -282,26 +315,10 @@ def handle_start_game():
             "message": "At least one player is required to start the game"
         }), 400
 
-    # Clear previous results
-    clear_results()
-
-    # Generation of unique game ID
-    game_id = str(uuid.uuid4())
-
-    # Selection of ten random questions
-    num_questions = min(10, len(active_bank))
-    selected_questions = random.sample(active_bank, num_questions)
-
-    # Store game session in Redis instead of old in-memory game_sessions dict
-    set_game_session(game_id, {
-        "game_id": game_id,
-        "session_code": session_code,
-        "players": players,
-        "bank_id": bank_id,
-        "questions": selected_questions,
-    })
-
-    print(f"Game started: {game_id} with {len(players)} players(s)")
+    # Create game session using shared helper
+    game_id, num_questions, players = _create_game(
+        session_code, players, bank_id, question_time, buffer_enabled
+    )
 
     # JOSE PATCH: attach game_id to lobby session (helps the host page poll and redirect players)
     # Now updates Redis instead of old in-memory lobby_sessions dict
@@ -311,7 +328,6 @@ def handle_start_game():
         lobby["started"] = True
         set_lobby_session(session_code, lobby)
 
-    # Send a response back to the website
     return jsonify({
         "success": True,
         "game_id": game_id,
@@ -396,7 +412,7 @@ def create_session():
         "session_code": session_code,
         "host": host,
         "bank_id": bank_id,
-        "players": [host],   # I'm counting host as present in the lobby (easy for display and consistency)
+        "players": [host],   # Host is counted as present in the lobby
         "started": False,
         "game_id": None
     }
@@ -458,6 +474,17 @@ def get_session(session_code):
     if lobby is None:
         return jsonify({"success": False, "message": "Session not found"}), 404
 
+    # Fetch question_time and buffer_enabled from the game session if it has started
+    # Defaults are used if the game hasn't started yet
+    game_id = lobby.get("game_id")
+    question_time = 30
+    buffer_enabled = True
+
+    game = get_game_session(game_id) if game_id else None
+    if game:
+        question_time = game.get("question_time", 30)
+        buffer_enabled = game.get("buffer_enabled", True)
+
     return jsonify({
         "success": True,
         "session_code": lobby["session_code"],
@@ -465,7 +492,9 @@ def get_session(session_code):
         "bank_id": lobby["bank_id"],
         "players": lobby["players"],
         "started": lobby.get("started", False),
-        "game_id": lobby.get("game_id")
+        "game_id": game_id,
+        "question_time": question_time,      # returned so frontend can set the timer
+        "buffer_enabled": buffer_enabled     # returned so frontend can set the buffer
     })
 
 
@@ -483,9 +512,6 @@ def start_session(session_code):
     if lobby.get("started"):
         return jsonify({"success": True, "message": "Game already started", "game_id": lobby.get("game_id")})
 
-    # Directly calling the start game logic instead of app.test_request_context
-    # (test_request_context does not work reliably in Vercel's serverless environment)
-    bank_id, active_bank = get_question_bank(lobby.get("bank_id"))
     players = lobby.get("players", [])
 
     if not players or len(players) == 0:
@@ -494,31 +520,21 @@ def start_session(session_code):
             "message": "At least one player is required"
         }), 400
 
-    # Clear previous results
-    clear_results()
+    # Read host-customizable timer settings from request body
+    data = request.get_json() or {}
+    question_time = data.get("question_time", 30)
+    buffer_enabled = data.get("buffer_enabled", True)
 
-    # Generation of unique game ID
-    game_id = str(uuid.uuid4())
+    # Create game session using shared helper (no duplicate code)
+    game_id, num_questions, players = _create_game(
+        session_code, players, lobby.get("bank_id"), question_time, buffer_enabled
+    )
 
-    # Selection of ten random questions
-    num_questions = min(10, len(active_bank))
-    selected_questions = random.sample(active_bank, num_questions)
-
-    # Store game session in Redis
-    set_game_session(game_id, {
-        "game_id": game_id,
-        "session_code": session_code,
-        "players": players,
-        "bank_id": bank_id,
-        "questions": selected_questions,
-    })
-
-    # JOSE PATCH: attach game_id to lobby session (helps the host page poll and redirect players)
+    # Attach game_id to lobby session so host page can poll and redirect players
     lobby["game_id"] = game_id
     lobby["started"] = True
     set_lobby_session(session_code, lobby)
 
-    # Send a response back to the website
     return jsonify({
         "success": True,
         "game_id": game_id,
@@ -559,10 +575,7 @@ def get_results(player):
 # Run server
 # ==============================================
 
-# If this file is run directly, start the server
 if __name__ == '__main__':
-
     print(f"Loaded {len(question_bank)} questions")
     print("Server running on http://localhost:5000")
-    # Start Flask server on port 5000 with debug mode on
     app.run(debug=True, port=5000)
