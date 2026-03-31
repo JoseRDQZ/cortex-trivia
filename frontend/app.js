@@ -1,19 +1,28 @@
 /**
- * Cortex Trivia — Frontend Integration (Sprint 2 + Sprint 3)
+ * Cortex Trivia — Frontend Integration (Sprint 5)
  *
  * Jose Rodriguez (me):
- * - I'm keeping the existing Sprint 2 demo flow stable (Lobby → Quiz → Results).
- * - I'm adding Sprint 3 scaffolding (Host page + Player page) without rewriting what already works.
+ * - I'm keeping the existing demo flow stable (Lobby → Host/Player → Quiz → Results).
+ * - I'm extending the frontend to track richer gameplay metrics for Sprint 5.
  *
  * Why I'm doing it this way:
- * - I want the UI to be testable at every step (no "big bang" refactor right before a demo).
- * - I want the backend contract to be flexible while teammates iterate (support old + new endpoints).
+ * - I want the UI to stay testable while adding more detailed results.
+ * - I want results.html to work even before the backend exposes every new metric.
+ * - I want local browser state to preserve player/session stats for demo testing.
  */
 
 const API_BASE = "";
 
 // I store state in sessionStorage so each browser window can act independently (host vs player).
-const STORAGE_KEY = "cortex_demo_state_v2";
+const STORAGE_KEY = "cortex_demo_state_v3";
+
+// ==========================================================
+// Sprint 5 scoring assumptions for frontend-side fallbacks
+// ==========================================================
+const DEFAULT_QUESTION_TIME = 30;
+const DEFAULT_QUESTIONS_PER_GAME = 10;
+const DEFAULT_MAX_POINTS_PER_QUESTION = 10;
+const DEFAULT_MAX_TOTAL_SCORE = DEFAULT_QUESTIONS_PER_GAME * DEFAULT_MAX_POINTS_PER_QUESTION;
 
 function loadState() {
   try {
@@ -33,17 +42,66 @@ function clearState() {
 
 function defaultState() {
   return {
-    role: "",              // "host" | "player"
-    session_code: "",      // short code
-    bank_id: "cs",         // category / question bank id
-    players: [],           // list of players (host page mainly)
-    active_player: "",     // current player name (player page / quiz)
-    game_id: "",           // backend game id
-    questions: [],         // cached question set
-    idx: 0,                // current question index
-    question_time: 30,     // host-customizable seconds per question (added from classmate)
-    buffer_enabled: true   // host-customizable buffer toggle (added from classmate)
+    role: "",                 // "host" | "player"
+    session_code: "",         // short code
+    bank_id: "cs",            // category / question bank id
+    players: [],              // list of players (host page mainly)
+    active_player: "",        // current player name (player page / quiz)
+    game_id: "",              // backend game id
+    questions: [],            // cached question set
+    idx: 0,                   // current question index
+    question_time: 30,        // host-customizable seconds per question
+    buffer_enabled: true,     // host-customizable buffer toggle
+
+    // ======================================================
+    // Sprint 5 metrics block
+    // ======================================================
+    metrics: {
+      question_count: 0,
+      max_points_per_question: DEFAULT_MAX_POINTS_PER_QUESTION,
+      max_total_score: DEFAULT_MAX_TOTAL_SCORE,
+      attempts: []            // per-question results collected during quiz
+    }
   };
+}
+
+function ensureMetrics(state) {
+  if (!state.metrics || typeof state.metrics !== "object") {
+    state.metrics = {
+      question_count: 0,
+      max_points_per_question: DEFAULT_MAX_POINTS_PER_QUESTION,
+      max_total_score: DEFAULT_MAX_TOTAL_SCORE,
+      attempts: []
+    };
+  }
+
+  if (!Array.isArray(state.metrics.attempts)) {
+    state.metrics.attempts = [];
+  }
+
+  if (!state.metrics.max_points_per_question) {
+    state.metrics.max_points_per_question = DEFAULT_MAX_POINTS_PER_QUESTION;
+  }
+
+  if (!state.metrics.question_count) {
+    state.metrics.question_count = Array.isArray(state.questions) ? state.questions.length : 0;
+  }
+
+  state.metrics.max_total_score =
+    (state.metrics.question_count || DEFAULT_QUESTIONS_PER_GAME) *
+    (state.metrics.max_points_per_question || DEFAULT_MAX_POINTS_PER_QUESTION);
+
+  return state;
+}
+
+function resetMetricsForNewGame(state) {
+  state.metrics = {
+    question_count: 0,
+    max_points_per_question: DEFAULT_MAX_POINTS_PER_QUESTION,
+    max_total_score: DEFAULT_MAX_TOTAL_SCORE,
+    attempts: []
+  };
+  return state;
 }
 
 function $(id) {
@@ -74,6 +132,221 @@ function makeSessionCode() {
   let out = "";
   for (let i = 0; i < 6; i++) out += letters[Math.floor(Math.random() * letters.length)];
   return out;
+}
+
+function safeNumber(v, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function round2(v) {
+  return Math.round(v * 100) / 100;
+}
+
+function formatPercent(v) {
+  if (!Number.isFinite(v)) return "—";
+  return `${round2(v)}%`;
+}
+
+function formatSeconds(v) {
+  if (!Number.isFinite(v)) return "—";
+  return `${round2(v)}s`;
+}
+
+function formatRatio(a, b) {
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return "—";
+  return `${round2(a)} / ${round2(b)}`;
+}
+
+function capitalizeCategory(bankId) {
+  const map = {
+    cs: "Computer Science",
+    cybersec: "Cybersecurity",
+    it: "Information Technology",
+    datasci: "Data Science"
+  };
+  return map[bankId] || bankId || "—";
+}
+
+function getPerformanceRating(scorePercent) {
+  if (!Number.isFinite(scorePercent)) return "—";
+  if (scorePercent >= 90) return "Excellent";
+  if (scorePercent >= 75) return "Strong";
+  if (scorePercent >= 60) return "Good";
+  if (scorePercent >= 40) return "Developing";
+  return "Needs Improvement";
+}
+
+function recordQuestionMetric(state, payload) {
+  state = ensureMetrics(state);
+
+  const questionId = payload.question_id ?? `q-${payload.question_index ?? state.idx}`;
+  const attempts = state.metrics.attempts;
+
+  const existingIndex = attempts.findIndex((a) => String(a.question_id) === String(questionId));
+
+  const normalized = {
+    question_id: questionId,
+    question_index: safeNumber(payload.question_index, state.idx),
+    selected_answer_index: payload.selected_answer_index,
+    is_correct: !!payload.is_correct,
+    unanswered: !!payload.unanswered,
+    response_time: safeNumber(payload.response_time, 0),
+    time_remaining: safeNumber(payload.time_remaining, 0),
+    question_time: safeNumber(payload.question_time, state.question_time || DEFAULT_QUESTION_TIME),
+    multiplier: safeNumber(payload.multiplier, NaN),
+    points_awarded: safeNumber(payload.points_awarded, NaN),
+    points_lost: safeNumber(payload.points_lost, NaN),
+    max_points: safeNumber(payload.max_points, state.metrics.max_points_per_question || DEFAULT_MAX_POINTS_PER_QUESTION)
+  };
+
+  if (existingIndex >= 0) attempts[existingIndex] = normalized;
+  else attempts.push(normalized);
+
+  state.metrics.question_count = Math.max(
+    state.metrics.question_count || 0,
+    Array.isArray(state.questions) ? state.questions.length : 0,
+    attempts.length
+  );
+
+  state.metrics.max_total_score =
+    (state.metrics.question_count || DEFAULT_QUESTIONS_PER_GAME) *
+    (state.metrics.max_points_per_question || DEFAULT_MAX_POINTS_PER_QUESTION);
+
+  return state;
+}
+
+function calculateLocalResultsMetrics(state, backendData = {}) {
+  state = ensureMetrics(state);
+
+  const attempts = Array.isArray(state.metrics.attempts) ? state.metrics.attempts : [];
+  const questionCount =
+    safeNumber(backendData.question_count, 0) ||
+    state.metrics.question_count ||
+    (Array.isArray(state.questions) ? state.questions.length : 0) ||
+    DEFAULT_QUESTIONS_PER_GAME;
+
+  const correct =
+    safeNumber(backendData.correct, NaN) ||
+    attempts.filter((a) => a.is_correct).length;
+
+  const wrong =
+    Number.isFinite(Number(backendData.wrong))
+      ? Number(backendData.wrong)
+      : attempts.filter((a) => !a.is_correct && !a.unanswered).length;
+
+  const unanswered =
+    Number.isFinite(Number(backendData.unanswered))
+      ? Number(backendData.unanswered)
+      : Math.max(questionCount - correct - wrong, attempts.filter((a) => a.unanswered).length);
+
+  const answered =
+    Number.isFinite(Number(backendData.answered))
+      ? Number(backendData.answered)
+      : correct + wrong;
+
+  const accuracyPercent =
+    answered > 0 ? round2((correct / answered) * 100) : 0;
+
+  const maxPointsPerQuestion =
+    safeNumber(backendData.max_points_per_question, 0) ||
+    state.metrics.max_points_per_question ||
+    DEFAULT_MAX_POINTS_PER_QUESTION;
+
+  const maxScore =
+    safeNumber(backendData.max_score, 0) ||
+    safeNumber(backendData.maximum_possible, 0) ||
+    questionCount * maxPointsPerQuestion;
+
+  const pointsEarnedFromAttempts = attempts.reduce((sum, a) => {
+    if (Number.isFinite(a.points_awarded)) return sum + a.points_awarded;
+    if (a.is_correct) return sum + maxPointsPerQuestion;
+    return sum;
+  }, 0);
+
+  const finalScore =
+    safeNumber(backendData.final_score, NaN) ||
+    safeNumber(backendData.score, NaN) ||
+    pointsEarnedFromAttempts ||
+    0;
+
+  const pointsEarned =
+    safeNumber(backendData.points_earned, NaN) ||
+    pointsEarnedFromAttempts ||
+    finalScore;
+
+  const pointsLostFromAttempts = attempts.reduce((sum, a) => {
+    if (Number.isFinite(a.points_lost)) return sum + a.points_lost;
+    if (a.is_correct) {
+      const awarded = Number.isFinite(a.points_awarded) ? a.points_awarded : maxPointsPerQuestion;
+      return sum + Math.max(maxPointsPerQuestion - awarded, 0);
+    }
+    return sum;
+  }, 0);
+
+  const pointsLost =
+    safeNumber(backendData.points_lost, NaN) ||
+    pointsLostFromAttempts ||
+    Math.max(maxScore - pointsEarned, 0);
+
+  const timedAttempts = attempts.filter((a) => Number.isFinite(a.response_time));
+  const avgResponseTime =
+    timedAttempts.length > 0
+      ? round2(timedAttempts.reduce((sum, a) => sum + a.response_time, 0) / timedAttempts.length)
+      : NaN;
+
+  const correctTimedAttempts = attempts.filter(
+    (a) => a.is_correct && Number.isFinite(a.response_time)
+  );
+
+  const fastestCorrectTime =
+    correctTimedAttempts.length > 0
+      ? Math.min(...correctTimedAttempts.map((a) => a.response_time))
+      : NaN;
+
+  const slowestCorrectTime =
+    correctTimedAttempts.length > 0
+      ? Math.max(...correctTimedAttempts.map((a) => a.response_time))
+      : NaN;
+
+  const multipliers = attempts
+    .map((a) => a.multiplier)
+    .filter((m) => Number.isFinite(m));
+
+  const avgMultiplier =
+    multipliers.length > 0
+      ? round2(multipliers.reduce((sum, m) => sum + m, 0) / multipliers.length)
+      : NaN;
+
+  const scorePercent =
+    maxScore > 0 ? round2((finalScore / maxScore) * 100) : 0;
+
+  return {
+    player_name: backendData.player_name || state.active_player || "Player",
+    category: backendData.category || capitalizeCategory(state.bank_id),
+    session_code: backendData.session_code || state.session_code || "—",
+
+    correct,
+    wrong,
+    unanswered,
+    answered,
+    question_count: questionCount,
+    accuracy_percent: accuracyPercent,
+
+    final_score: round2(finalScore),
+    max_score: round2(maxScore),
+    points_earned: round2(pointsEarned),
+    points_lost: round2(pointsLost),
+    score_percent: scorePercent,
+
+    avg_response_time: avgResponseTime,
+    fastest_correct_time: fastestCorrectTime,
+    slowest_correct_time: slowestCorrectTime,
+    avg_multiplier: avgMultiplier,
+
+    performance_rating:
+      backendData.performance_rating || getPerformanceRating(scorePercent)
+  };
 }
 
 async function apiRequest(path, { method = "GET", body = null } = {}) {
@@ -129,11 +402,6 @@ async function tryGet(paths) {
 
 /* =========================================================
    PAGE: Lobby (frontend/index.html)
-   IDs used:
-   - createName, bankSelect, createBtn
-   - joinCode, joinName, joinBtn
-   - sessionCode, playerList, statusText
-   - startBtn, leaveBtn (legacy demo buttons; we keep them safe)
 ========================================================= */
 function initLobby() {
   const createBtn = $("createBtn");
@@ -143,7 +411,7 @@ function initLobby() {
 
   if (!createBtn && !joinBtn) return;
 
-  let state = loadState() || defaultState();
+  let state = ensureMetrics(loadState() || defaultState());
 
   function render() {
     setText("sessionCode", state.session_code || "—");
@@ -162,20 +430,17 @@ function initLobby() {
     setStatus("statusText", "Creating session…");
 
     // I reset state so a previous game_id doesn't leak into a new session.
-    state = defaultState();
+    state = resetMetricsForNewGame(defaultState());
     state.role = "host";
     state.active_player = hostName;
     state.bank_id = bankId;
 
     try {
-      // Preferred (Sprint 3): /session/create
-      // Fallback: /create
       const resp = await tryPost(
         ["/session/create", "/create"],
         { host: hostName, host_name: hostName, bank_id: bankId, bank: bankId }
       );
 
-      // I normalize whatever the backend returns into our frontend state.
       const code = resp.session_code || resp.code || makeSessionCode();
       state.session_code = String(code).toUpperCase();
       state.players = resp.players || [hostName];
@@ -186,7 +451,6 @@ function initLobby() {
       setStatus("statusText", `Session created: ${state.session_code}. Sending host to dashboard…`);
       window.location.href = "./host.html";
     } catch (err) {
-      // If backend is down, I still allow UI testing (demo safety), but I keep the status honest.
       state.session_code = makeSessionCode();
       state.players = [hostName];
       saveState(state);
@@ -210,14 +474,12 @@ function initLobby() {
 
     setStatus("statusText", "Joining session…");
 
-    state = defaultState();
+    state = resetMetricsForNewGame(defaultState());
     state.role = "player";
     state.session_code = code;
     state.active_player = playerName;
 
     try {
-      // Preferred (Sprint 3): /session/join
-      // Fallback: /join
       const resp = await tryPost(
         ["/session/join", "/join"],
         { session_code: code, player: playerName, player_name: playerName }
@@ -232,7 +494,6 @@ function initLobby() {
       setStatus("statusText", `Joined ${code} as ${playerName}. Sending player to waiting room…`);
       window.location.href = "./player.html";
     } catch (err) {
-      // Even if backend join fails, I keep player page usable for UI testing.
       state.players = [playerName];
       saveState(state);
       render();
@@ -241,7 +502,6 @@ function initLobby() {
     }
   });
 
-  // Legacy buttons (optional): keep them safe if present.
   startBtn?.addEventListener("click", async (e) => {
     e.preventDefault();
     setStatus("statusText", "Sprint 3: start the game from the Host page.");
@@ -250,7 +510,7 @@ function initLobby() {
   leaveBtn?.addEventListener("click", (e) => {
     e.preventDefault();
     clearState();
-    state = defaultState();
+    state = ensureMetrics(defaultState());
     render();
     setStatus("statusText", "Left session.");
   });
@@ -261,21 +521,12 @@ function initLobby() {
 
 /* =========================================================
    PAGE: Host (frontend/host.html)
-   IDs used:
-   - hostSessionCode, hostBank, hostPlayers, hostStatus
-   - hostStartBtn, hostBackBtn, copyCodeBtn
-   - .timer-btn (buttons with data-time attribute for timer selection)
-   - bufferOn, bufferOff (buttons to toggle buffer)
 ========================================================= */
 function initHost() {
   if (!$("hostStartBtn")) return;
 
-  let state = loadState() || defaultState();
+  let state = ensureMetrics(loadState() || defaultState());
 
-  // ==============================================================
-  // syncControlUI: visually highlights the active timer/buffer btn
-  // Added from classmate's version for host timer controls
-  // ==============================================================
   function syncControlUI() {
     const currentTime = state.question_time || 30;
 
@@ -290,11 +541,6 @@ function initHost() {
     bufferOffBtn?.classList.toggle("selected", !state.buffer_enabled);
   }
 
-  // ==============================================================
-  // Timer buttons: host clicks to set question time (e.g. 15s, 30s)
-  // Each button needs data-time="15" (or whatever value) in HTML
-  // Added from classmate's version
-  // ==============================================================
   document.querySelectorAll(".timer-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const val = Number(btn.dataset.time);
@@ -306,10 +552,6 @@ function initHost() {
     });
   });
 
-  // ==============================================================
-  // Buffer toggle: host enables or disables the pre-question buffer
-  // Added from classmate's version
-  // ==============================================================
   $("bufferOn")?.addEventListener("click", () => {
     state.buffer_enabled = true;
     saveState(state);
@@ -324,7 +566,6 @@ function initHost() {
     setStatus("hostStatus", "Buffer timer disabled");
   });
 
-  // If I got here without a host session, I want a clear message instead of silent failure.
   if (state.role !== "host" || !state.session_code) {
     setText("hostSessionCode", "—");
     setText("hostBank", "—");
@@ -337,15 +578,13 @@ function initHost() {
     setText("hostSessionCode", state.session_code || "—");
     setText("hostBank", state.bank_id || "—");
     setText("hostPlayers", state.players.length ? state.players.join(", ") : "Waiting for players…");
-    syncControlUI(); // keep timer/buffer buttons in sync on every render
+    syncControlUI();
   }
 
   async function refreshSession() {
-    // I poll session state so the host can see players join (Sprint 3 direction).
     try {
       const resp = await tryGet([`/session/${encodeURIComponent(state.session_code)}`]);
 
-      // Normalize into state (don't assume backend field names).
       state.players = resp.players || state.players;
       state.bank_id = resp.bank_id || state.bank_id;
 
@@ -362,7 +601,6 @@ function initHost() {
         setStatus("hostStatus", "Waiting… share the code with players.");
       }
     } catch {
-      // I don't fail hard because we still want the UI usable even if session polling isn't ready.
       render();
       setStatus("hostStatus", "Host ready. (Session polling not available yet.)");
     }
@@ -389,8 +627,6 @@ function initHost() {
       let resp = null;
 
       try {
-        // Preferred (Sprint 3): /session/<code>/start
-        // Now sends question_time and buffer_enabled to backend (added from classmate)
         resp = await tryPost(
           [`/session/${encodeURIComponent(state.session_code)}/start`],
           {
@@ -399,7 +635,6 @@ function initHost() {
           }
         );
       } catch {
-        // Fallback: /start also sends time settings (added from classmate)
         resp = await tryPost(
           ["/start"],
           {
@@ -418,12 +653,12 @@ function initHost() {
       state.game_id = gameId;
       state.questions = [];
       state.idx = 0;
+      state = resetMetricsForNewGame(state);
 
       saveState(state);
       render();
 
       setStatus("hostStatus", `Game started (game_id: ${gameId}).`);
-      // Host does NOT auto-open quiz; host is a "monitor" page by design.
     } catch (err) {
       setStatus("hostStatus", `Start failed: ${err.message}`);
     }
@@ -431,20 +666,16 @@ function initHost() {
 
   render();
   refreshSession();
-  // I refresh periodically so the host sees joins without clicking anything.
   setInterval(refreshSession, 1500);
 }
 
 /* =========================================================
    PAGE: Player (frontend/player.html)
-   IDs used:
-   - playerSessionCode, playerName, playerStatus
-   - playerCheckBtn, playerOpenQuizBtn, playerBackBtn
 ========================================================= */
 function initPlayer() {
   if (!$("playerCheckBtn")) return;
 
-  let state = loadState() || defaultState();
+  let state = ensureMetrics(loadState() || defaultState());
 
   if (state.role !== "player" || !state.session_code) {
     setText("playerSessionCode", "—");
@@ -479,7 +710,6 @@ function initPlayer() {
 
       setStatus("playerStatus", "Host has not started the game yet.");
     } catch (err) {
-      // If the status endpoint isn't ready, I give a clear message instead of breaking the page.
       setStatus("playerStatus", `Status endpoint not ready (${err.message}). Waiting for host…`);
     }
   }
@@ -497,7 +727,6 @@ function initPlayer() {
       return;
     }
 
-    // I keep this redirect simple: quiz reads game_id from sessionStorage.
     saveState(state);
     window.location.href = "./quiz.html";
   });
@@ -508,29 +737,23 @@ function initPlayer() {
 
 /* =========================================================
    PAGE: Quiz (frontend/quiz.html)
-   This keeps your Sprint 2 behavior:
-   - game_id must exist
-   - fetch questions
-   - submit answer
-   - next question
 ========================================================= */
 function initQuiz() {
-  // I only run quiz logic if quiz-specific elements exist.
   const questionText = $("questionText");
   const answersEl = $("answers");
   const statusEl = $("quizStatus");
   const progressPill = $("progressPill");
   const submitBtn = $("submitBtn");
   const nextBtn = $("nextBtn");
-  const timerEl = $("timer"); // optional element to show countdown
+  const timerEl = $("timer");
 
-  let interval = null;       // stores setInterval for countdown display
+  let interval = null;
   let currentTimeRemaining = 0;
   let bufferInterval = null;
 
   if (!questionText || !answersEl || !statusEl || !progressPill || !submitBtn || !nextBtn) return;
 
-  let state = loadState() || defaultState();
+  let state = ensureMetrics(loadState() || defaultState());
 
   if (!state.game_id) {
     setText("questionText", "No active game found.");
@@ -567,7 +790,6 @@ function initQuiz() {
 
     answersEl.innerHTML = "";
 
-    // Fisher-Yates shuffle (kept from your version)
     let displayIndexes = q.choices.map((_, i) => i);
     for (let i = displayIndexes.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -583,7 +805,7 @@ function initQuiz() {
       btn.addEventListener("click", () => {
         if (submitted) return;
 
-        selectedAnswerIndex = idx; // original index preserved for correct answer checking
+        selectedAnswerIndex = idx;
 
         Array.from(answersEl.querySelectorAll("button.answer")).forEach((b) => {
           b.classList.remove("selected");
@@ -600,16 +822,11 @@ function initQuiz() {
     submitBtn.disabled = true;
     nextBtn.disabled = true;
 
-    // ==============================================================
-    // startQuestionTimer: reads question_time from state so it
-    // respects whatever the host configured (added from classmate)
-    // ==============================================================
     function startQuestionTimer() {
       answersEl.style.visibility = "visible";
       setQuizStatus("Pick an answer.");
 
-      // Use host-configured time instead of hardcoded constant
-      const questionTime = state.question_time || 30;
+      const questionTime = state.question_time || DEFAULT_QUESTION_TIME;
       let remaining = questionTime;
       currentTimeRemaining = questionTime;
 
@@ -630,6 +847,8 @@ function initQuiz() {
             setQuizStatus("Time's up! Auto-submitting...");
 
             const q = state.questions[state.idx];
+            const questionTimeValue = state.question_time || DEFAULT_QUESTION_TIME;
+            const responseTime = questionTimeValue - currentTimeRemaining;
 
             try {
               const resp = await apiRequest(
@@ -644,6 +863,23 @@ function initQuiz() {
                   }
                 }
               );
+
+              state = recordQuestionMetric(state, {
+                question_id: q.id,
+                question_index: state.idx,
+                selected_answer_index: selectedAnswerIndex ?? -1,
+                is_correct: resp.is_correct === true,
+                unanswered: selectedAnswerIndex === null,
+                response_time: responseTime,
+                time_remaining: currentTimeRemaining,
+                question_time: questionTimeValue,
+                multiplier: resp.multiplier,
+                points_awarded: resp.points_awarded ?? resp.score_awarded,
+                points_lost: resp.points_lost,
+                max_points: resp.max_points
+              });
+
+              saveState(state);
 
               if (resp.is_correct === true) {
                 setQuizStatus("Correct ✅");
@@ -663,11 +899,6 @@ function initQuiz() {
       }, 1000);
     }
 
-    // ==============================================================
-    // Buffer handling: respects host's buffer_enabled setting
-    // If buffer is off, skip straight to the question timer
-    // Added from classmate's version (replaces hardcoded BUFFER_TIME)
-    // ==============================================================
     const bufferTime = state.buffer_enabled ? 5 : 0;
 
     if (bufferTime > 0) {
@@ -687,38 +918,37 @@ function initQuiz() {
         }
       }, 1000);
     } else {
-      // Buffer disabled by host — go straight to question
       startQuestionTimer();
     }
   }
 
-  // ==============================================================
-  // syncFromSession: pulls question_time + buffer_enabled from
-  // backend before quiz starts so player uses host's settings
-  // Added from classmate's version
-  // ==============================================================
   async function syncFromSession() {
     const resp = await tryGet([`/session/${encodeURIComponent(state.session_code)}`]);
 
-    // Merge backend response into state so question_time and buffer_enabled are up to date
     state = {
       ...state,
       ...resp
     };
 
+    state = ensureMetrics(state);
     saveState(state);
   }
 
   async function loadQuestionsIfNeeded() {
-    // Re-read state in case syncFromSession updated it
     const latest = loadState();
-    if (latest) state = latest;
+    if (latest) state = ensureMetrics(latest);
 
     if (!state.game_id) {
       throw new Error("Missing game_id. Game was not started properly.");
     }
 
-    if (Array.isArray(state.questions) && state.questions.length > 0) return;
+    if (Array.isArray(state.questions) && state.questions.length > 0) {
+      state.metrics.question_count = state.questions.length;
+      state.metrics.max_total_score =
+        state.metrics.question_count * state.metrics.max_points_per_question;
+      saveState(state);
+      return;
+    }
 
     setQuizStatus("Fetching questions from backend…");
 
@@ -730,6 +960,9 @@ function initQuiz() {
 
     state.questions = data.questions.slice(0, 10);
     state.idx = 0;
+    state.metrics.question_count = state.questions.length;
+    state.metrics.max_total_score =
+      state.metrics.question_count * state.metrics.max_points_per_question;
 
     saveState(state);
   }
@@ -741,8 +974,11 @@ function initQuiz() {
     }
 
     const q = state.questions[state.idx];
+    const questionTimeValue = state.question_time || DEFAULT_QUESTION_TIME;
+    const responseTime = questionTimeValue - currentTimeRemaining;
+
     submitted = true;
-    clearTimers(); // stop timer when user submits manually
+    clearTimers();
     submitBtn.disabled = true;
 
     setQuizStatus("Submitting answer…");
@@ -759,6 +995,23 @@ function initQuiz() {
           currTime: currentTimeRemaining
         }
       });
+
+      state = recordQuestionMetric(state, {
+        question_id: q.id,
+        question_index: state.idx,
+        selected_answer_index: selectedAnswerIndex,
+        is_correct: resp.is_correct === true,
+        unanswered: false,
+        response_time: responseTime,
+        time_remaining: currentTimeRemaining,
+        question_time: questionTimeValue,
+        multiplier: resp.multiplier,
+        points_awarded: resp.points_awarded ?? resp.score_awarded,
+        points_lost: resp.points_lost,
+        max_points: resp.max_points
+      });
+
+      saveState(state);
 
       if (resp.is_correct === true) setQuizStatus("Correct ✅");
       else setQuizStatus(`Wrong ❌ (Correct: ${resp.correct_text})`);
@@ -790,8 +1043,6 @@ function initQuiz() {
     renderQuestion();
   });
 
-  // syncFromSession first so question_time and buffer_enabled are loaded
-  // before the first question renders (added from classmate's version)
   (async () => {
     try {
       await syncFromSession();
@@ -813,22 +1064,55 @@ function initResults() {
 
   if (!statusEl && !backBtn) return;
 
-  const state = loadState() || defaultState();
+  let state = ensureMetrics(loadState() || defaultState());
   const player = state.active_player || (state.players && state.players[0]) || "Player";
+
+  function renderResults(metrics) {
+    setText("playerName", metrics.player_name || player);
+    setText("resultsCategory", metrics.category || capitalizeCategory(state.bank_id));
+    setText("resultsSession", metrics.session_code || state.session_code || "—");
+
+    setText("correctCount", String(metrics.correct ?? "—"));
+    setText("wrongCount", String(metrics.wrong ?? "—"));
+    setText("answeredCount", String(metrics.answered ?? "—"));
+    setText("accuracyPercent", formatPercent(metrics.accuracy_percent));
+
+    setText("scorePoints", String(metrics.final_score ?? "—"));
+    setText("maxScorePoints", String(metrics.max_score ?? "—"));
+    setText("pointsEarned", String(metrics.points_earned ?? "—"));
+    setText("pointsLost", String(metrics.points_lost ?? "—"));
+
+    setText("avgResponseTime", formatSeconds(metrics.avg_response_time));
+    setText("fastestCorrectTime", formatSeconds(metrics.fastest_correct_time));
+    setText("slowestCorrectTime", formatSeconds(metrics.slowest_correct_time));
+    setText("avgMultiplier", Number.isFinite(metrics.avg_multiplier) ? String(metrics.avg_multiplier) : "—");
+
+    setText("questionCount", String(metrics.question_count ?? "—"));
+    setText("unansweredCount", String(metrics.unanswered ?? "—"));
+    setText("scoreOutOfMax", formatRatio(metrics.final_score, metrics.max_score));
+    setText("performanceRating", metrics.performance_rating || "—");
+  }
 
   async function loadResults() {
     if (statusEl) statusEl.textContent = "Loading results…";
 
+    let backendData = {};
+
     try {
-      const data = await apiRequest(`/results/${encodeURIComponent(player)}`, { method: "GET" });
-
-      setText("correctCount", String(data.correct ?? "—"));
-      setText("wrongCount", String(data.wrong ?? "—"));
-      setText("scorePoints", String(data.final_score ?? "—"));
-
-      if (statusEl) statusEl.textContent = `Results loaded for ${player}.`;
+      backendData = await apiRequest(`/results/${encodeURIComponent(player)}`, { method: "GET" });
     } catch (err) {
-      if (statusEl) statusEl.textContent = `Could not load results: ${err.message}`;
+      // I do not fail the page if backend results are limited or unavailable.
+      backendData = {};
+      if (statusEl) {
+        statusEl.textContent = `Backend results limited (${err.message}). Showing local metrics…`;
+      }
+    }
+
+    const metrics = calculateLocalResultsMetrics(state, backendData);
+    renderResults(metrics);
+
+    if (statusEl) {
+      statusEl.textContent = `Results loaded for ${player}.`;
     }
   }
 
@@ -845,7 +1129,6 @@ function initResults() {
    BOOTSTRAP
 ========================================================= */
 document.addEventListener("DOMContentLoaded", () => {
-  // I detect pages by their unique elements so I don't depend on data-page everywhere.
   if ($("createBtn") || $("joinBtn")) initLobby();
   if ($("hostStartBtn")) initHost();
   if ($("playerCheckBtn")) initPlayer();
