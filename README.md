@@ -12,93 +12,101 @@ The project maintains separation between frontend interface logic, backend sessi
 management, scoring logic, and the trivia question database.
 
 -------------------------------------------
-CURRENT STATUS (Sprint 4 – Gameplay Integration and Refinement)
+CURRENT STATUS (Sprint 5 – Deployment and Gameplay Enhancement)
 -------------------------------------------
 
-Sprint 4 focused on integrating major gameplay systems into the multiplayer
-environment and refining the overall game experience.
+Sprint 5 focused on completing deployment, refining gameplay systems,
+and improving the overall multiplayer experience.
 
-The system now supports a more complete multiplayer gameplay flow:
+The system now supports a fully hosted multiplayer gameplay flow:
 
     Lobby → Session Creation → Join Session → Timed Quiz Gameplay → Results
 
-During Sprint 4, the team successfully integrated time-based scoring,
-timer behavior, automatic question progression, and expanded quiz category
-support into the multiplayer session flow. These systems were tested
-together during the sprint demo, confirming that multiplayer sessions,
-timer progression, scoring updates, and category selection function
-cohesively during gameplay.
+During Sprint 5, the team successfully deployed the application using
+Vercel, making the project publicly accessible. Major gameplay systems
+were further refined, including scoring multiplier behavior, timer
+customization, answer choice randomization, multiplayer session flow,
+and expanded results page performance metrics.
 
-The architecture continues to follow a turn-based multiplayer model rather
-than relying on real-time socket-based communication. This keeps session
-progression controlled at the game-session level and supports fair,
-consistent behavior across all players.
-
--------------------------------------------
-SPRINT 4 FEATURES
--------------------------------------------
-
-Time-Based Scoring Implementation
-
-- Scoring now incorporates response time in addition to correctness
-- Faster correct answers earn more points
-- Incorrect answers receive zero points
-- Scoring logic was integrated into multiplayer gameplay and accepted
-  during Sprint 4 review
-
-Timer and Auto-Advance Integration
-
-- A question timer system has been fully integrated into gameplay
-- Questions automatically advance when:
-    1. All players submit their answers, or
-    2. The timer expires
-- A 3-second reading buffer was added before players begin answering
-- Timer progression was tested successfully during multiplayer sessions
-
-Question and Category Consistency in Multiplayer
-
-- Multiplayer sessions maintain consistent question delivery across players
-- Additional quiz databases were integrated into the system
-- New categories successfully connected and validated include:
-    - Data Science
-    - Information Technology
-- Category selection and gameplay consistency were confirmed during demo
-  testing
-
-Gameplay System Integration
-
-- Timer behavior, scoring logic, and database expansion were successfully
-  integrated together
-- Multiplayer sessions, timer progression, scoring updates, and category
-  selection were validated in the sprint demo
-- The complete gameplay loop was tested from session creation through
-  final results display
+The architecture continues to follow a turn-based multiplayer model
+rather than relying on real-time socket-based communication. This keeps
+session progression controlled at the game-session level and supports
+fair, consistent gameplay across all players.
 
 -------------------------------------------
-SPRINT 4 OUTCOME
+SPRINT 5 FEATURES
 -------------------------------------------
 
-The following Sprint 4 user stories were accepted by the product owner:
+Website Hosting and Deployment
 
-- User Story 2 – Time-Based Scoring Implementation
-- User Story 3 – Timer and Auto-Advance Integration
-- User Story 4 – Question and Category Consistency in Multiplayer
+- The application was successfully deployed using Vercel
+- The trivia website is now publicly accessible
+- Gameplay systems were validated in the hosted environment
+- Deployment became part of the complete demo-ready workflow
 
-The following Sprint 4 user stories were not accepted and were returned
-to the product backlog for refinement in Sprint 5:
+Scoring Multiplier Refinement
 
-- User Story 1 – Multiplayer Session Completion and Stability
-- User Story 5 – Multiplayer Results and Interface Refinement
+- Scoring logic was refined to provide more accurate and fair results
+- Time-based scoring behavior was further validated and adjusted
+- Multiplayer gameplay now produces more reliable final scoring
+- Scoring refinement was accepted during Sprint 5 review
 
-Overall Sprint 4 outcome:
+Timer Customization and Gameplay Controls
 
-- Time-based scoring implemented and validated
-- Timer behavior and automatic progression integrated into gameplay
-- 3-second reading buffer added successfully
-- Expanded quiz databases integrated into the multiplayer system
-- Full gameplay loop demonstrated successfully during the sprint demo
-- Team communication and integration testing remained consistent
-  throughout the sprint
+- Hosts can now customize gameplay pacing
+- Timer customization options were added to support different session
+  preferences
+- Buffer behavior can be adjusted as part of gameplay control
+- Multiplayer session flow was improved with better countdown handling
+
+Results Page Performance Metrics
+
+- The results page now shows more detailed player performance metrics
+- New metrics include performance indicators such as response time and
+  accuracy
+- Results visibility was expanded beyond simple final score display
+- The updated results interface was validated during the sprint demo
+
+Question Randomization and Gameplay Variety
+
+- Answer choice randomization was implemented
+- This improves gameplay fairness by preventing predictable answer
+  patterns
+- Gameplay variety was improved for repeated play sessions
+- Question flow remained consistent across multiplayer participants
+
+Multiplayer Session Flow Improvements
+
+- Session flow was improved with a countdown and session locking
+  mechanism
+- Session locking helps keep gameplay synchronized across all players
+- Final system validation confirmed that multiplayer systems, scoring,
+  timers, and hosted deployment function correctly together
+
+-------------------------------------------
+SPRINT 5 OUTCOME
+-------------------------------------------
+
+The following Sprint 5 user stories were accepted by the product owner:
+
+- User Story 1 – Website Hosting and Deployment
+- User Story 2 – Scoring Multiplier Refinement
+- User Story 3 – Timer Customization and Gameplay Controls
+- User Story 4 – Results Page Performance Metrics
+- User Story 5 – Question Randomization and Gameplay Variety
+
+No Sprint 5 user stories were rejected.
+
+Overall Sprint 5 outcome:
+
+- Application successfully deployed and hosted using Vercel
+- Scoring multiplier refined and validated
+- Timer customization and gameplay controls implemented
+- Results page expanded with richer player performance metrics
+- Answer choice randomization added for gameplay fairness
+- Multiplayer session flow improved with countdown and locking behavior
+- Full system validated successfully in the hosted environment
+- All planned Sprint 5 work was completed and accepted
 
 -------------------------------------------
 SYSTEM ARCHITECTURE
@@ -116,6 +124,7 @@ Key responsibilities include:
 - Displaying trivia questions
 - Submitting answers to the backend
 - Displaying session results
+- Displaying detailed player performance metrics
 
 Backend
 
@@ -127,23 +136,21 @@ Responsibilities include:
 - Generating unique session IDs using UUID
 - Selecting random trivia questions from the database
 - Tracking player responses
-- Calculating scores
+- Calculating scores and score multipliers
 - Managing session lifecycle states
-
-Sessions are currently stored in memory on the server.
-
-This means that restarting the backend will reset active sessions.
+- Supporting deployment-compatible session handling
 
 Data Layer
 
-Trivia questions are loaded from a JSON seed file.
+Trivia questions are loaded from JSON-based question banks.
 
 For each game session:
 
 - 10 random non-repeating questions are selected
 - Questions are distributed to all players in the session
+- Results and performance metrics are tracked for display
 
-The question database now includes categories such as:
+The question database includes categories such as:
 
 - Computer Science
 - Cybersecurity
@@ -171,7 +178,7 @@ frontend/
         Main gameplay page where questions are presented
 
     results.html
-        Final scoreboard and ranking display
+        Final scoreboard and player performance display
 
     app.js
         Frontend logic and backend API communication
@@ -236,12 +243,14 @@ GAMEPLAY FLOW
 3. Host starts the game
 4. The backend selects 10 random trivia questions
 5. All players receive the same question sequence
-6. A reading buffer is shown before answering begins
-7. Players answer questions within the time limit
-8. Answers are submitted to the backend
-9. The backend processes time-based scoring
-10. Questions advance when all players answer or time expires
-11. Final rankings are displayed on the results page
+6. A countdown and buffer system prepares the question flow
+7. Players answer questions within the configured time limit
+8. Answer choices are randomized to improve fairness
+9. Answers are submitted to the backend
+10. The backend processes refined time-based scoring
+11. Questions advance when all players answer or time expires
+12. Final rankings and detailed performance metrics are displayed on
+    the results page
 
 -------------------------------------------
 TECH STACK
@@ -258,6 +267,10 @@ Backend
 - Python
 - Flask
 
+Hosting / Deployment
+
+- Vercel
+
 Data Storage
 
 - JSON question database
@@ -270,42 +283,41 @@ Jose Carlos Rodriguez
 
 Team Leader, Product Owner, Frontend Lead
 Responsible for frontend implementation, UI integration,
-and deployment research.
+results page improvements, and deployment research.
 
 Daniel Losa
 
-Backend architecture and session lifecycle logic.
+Backend architecture, session lifecycle logic, and hosted environment
+integration.
 
 Renier Herba Borrego
 
-Scoring system implementation and score calculation logic.
+Scoring system implementation, multiplier refinement,
+and score calculation logic.
 
 Deijen Severino
 
-Timer system implementation and synchronization.
+Timer system implementation, synchronization, and gameplay controls.
 
 Diego A Sanchez
 
-Trivia question databases and category expansion.
+Trivia question databases, category expansion, and gameplay consistency.
 
 -------------------------------------------
-NEXT STEPS (Sprint 5)
+NEXT STEPS (Future Improvements)
 -------------------------------------------
 
-Sprint 5 will focus on refinement, stability, and deployment readiness.
+Future improvements will focus on expanding gameplay features,
+improving usability, and continuing system refinement.
 
-Planned improvements include:
+Potential improvements include:
 
-- Refining the scoring multiplier for fairness across player response times
-- Improving multiplayer session stability and completion behavior
-- Enhancing the multiplayer results interface
-- Continuing deployment and hosting preparation
-- Allocating more time for integration testing earlier in the sprint
-- Exploring additional gameplay improvements such as:
-    - Question shuffling for replayability
-    - Adjustable timer duration within a defined range
-    - Optional reading buffer enable/disable control
-    - More detailed player performance metrics on the results page
+- Further expanding results page performance metrics
+- Improving the overall UI design and user experience
+- Exploring additional gameplay customization options
+- Continuing optimization of backend performance and scalability
+- Allocating more time for early system-wide integration testing in
+  future development cycles
 
 -------------------------------------------
 
