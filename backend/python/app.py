@@ -28,6 +28,7 @@ from calculateScoring import (
     calculate_how_right,
     calculate_how_wrong,
     clear_results,
+    certify_time_subdiv,
     time_multiplier  # Added to calculate time-based score multiplier
 )
 
@@ -125,23 +126,38 @@ def safe_int(value, default=0):
     except (TypeError, ValueError):
         return int(default)
 
-def compute_quarter_multiplier(curr_time):
-    if curr_time >= 22.5:
-        return 1.0
-    elif curr_time >= 15:
-        return 0.75
-    elif curr_time >= 7.5:
-        return 0.50
-    return 0.25
+
+def carry_over_mult(curr_time):
+    if curr_time == 0:
+        return 0  # special case for zero
+
+    step = QUESTION_TOTAL_TIME / QUESTION_TIME_SUBDIV
+    # Generate subdivision thresholds
+    subdivisions = [int(QUESTION_TOTAL_TIME - i * step) for i in range(QUESTION_TIME_SUBDIV)]
+
+    # Determine which bucket curr_time belongs to
+    for i in range(len(subdivisions)):
+        if i == 0:
+            lower = subdivisions[i + 1] if len(subdivisions) > 1 else 0
+        elif i < len(subdivisions) - 1:
+            lower = subdivisions[i + 1]
+        else:
+            lower = -1  # last bucket
+
+        if lower < curr_time <= subdivisions[i]:
+            return subdivisions[i]
+
+    # fallback for smallest subdivision
+    return subdivisions[-1]
+
 
 def get_effective_multiplier(curr_time):
-    if curr_time is None:
+    legal_time = carry_over_mult(curr_time)
+    mult = time_multiplier(QUESTION_TOTAL_TIME, QUESTION_TIME_SUBDIV, legal_time)
+    if mult is not None:
+        return float(mult)
+    else:
         return 1.0
-
-    mult = time_multiplier(QUESTION_TOTAL_TIME, QUESTION_TIME_SUBDIV, curr_time)
-    if mult is None:
-        mult = compute_quarter_multiplier(curr_time)
-    return float(mult)
 
 def performance_rating_from_percent(score_percent):
     if score_percent >= 90:
