@@ -1,14 +1,5 @@
 /**
- * Cortex Trivia — Frontend Integration (Sprint 5)
- *
- * Jose Rodriguez (me):
- * - I'm keeping the existing demo flow stable (Lobby → Host/Player → Quiz → Results).
- * - I'm extending the frontend to track richer gameplay metrics for Sprint 5.
- *
- * Why I'm doing it this way:
- * - I want the UI to stay testable while adding more detailed results.
- * - I want results.html to work even before the backend exposes every new metric.
- * - I want local browser state to preserve player/session stats for demo testing.
+ * Cortex Trivia — Sprint 6 - 7
  */
 
 const API_BASE = "";
@@ -527,6 +518,7 @@ function initHost() {
 
   let state = ensureMetrics(loadState() || defaultState());
 
+  // syncControlUI: visually highlights the active timer/buffer btn
   function syncControlUI() {
     const currentTime = state.question_time || 30;
 
@@ -541,6 +533,7 @@ function initHost() {
     bufferOffBtn?.classList.toggle("selected", !state.buffer_enabled);
   }
 
+  // Timer buttons: host clicks to set question time (e.g. 15s, 30s)
   document.querySelectorAll(".timer-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const val = Number(btn.dataset.time);
@@ -552,6 +545,7 @@ function initHost() {
     });
   });
 
+  // Buffer toggle: host enables or disables the pre-question buffer
   $("bufferOn")?.addEventListener("click", () => {
     state.buffer_enabled = true;
     saveState(state);
@@ -822,21 +816,22 @@ function initQuiz() {
     submitBtn.disabled = true;
     nextBtn.disabled = true;
 
+    // startQuestionTimer: uses host-configured time
     function startQuestionTimer() {
       answersEl.style.visibility = "visible";
       setQuizStatus("Pick an answer.");
 
-      const questionTime = state.question_time || DEFAULT_QUESTION_TIME;
+      const questionTime = state.question_time || 30;
       let remaining = questionTime;
       currentTimeRemaining = questionTime;
 
-      if (timerEl) timerEl.textContent = ` ${remaining}`;
+      if (timerEl) timerEl.textContent = `${remaining}`;
 
       interval = setInterval(async () => {
         remaining = Math.max(remaining - 1, 0);
         currentTimeRemaining = remaining;
 
-        if (timerEl) timerEl.textContent = ` ${remaining}`;
+        if (timerEl) timerEl.textContent = `${remaining}`;
 
         if (remaining === 0) {
           clearInterval(interval);
@@ -899,6 +894,7 @@ function initQuiz() {
       }, 1000);
     }
 
+    // Buffer handling: respects host's buffer_enabled setting
     const bufferTime = state.buffer_enabled ? 5 : 0;
 
     if (bufferTime > 0) {
@@ -906,11 +902,11 @@ function initQuiz() {
       setQuizStatus("Get ready...");
 
       let bufferRemaining = bufferTime;
-      if (timerEl) timerEl.textContent = ` ${bufferRemaining}`;
+      if (timerEl) timerEl.textContent = `${bufferRemaining}`;
 
       bufferInterval = setInterval(() => {
         bufferRemaining--;
-        if (timerEl) timerEl.textContent = ` ${bufferRemaining}`;
+        if (timerEl) timerEl.textContent = `${bufferRemaining}`;
 
         if (bufferRemaining <= 0) {
           clearInterval(bufferInterval);
@@ -922,6 +918,7 @@ function initQuiz() {
     }
   }
 
+  // syncFromSession: pulls question_time + buffer_enabled from backend
   async function syncFromSession() {
     const resp = await tryGet([`/session/${encodeURIComponent(state.session_code)}`]);
 
@@ -1043,6 +1040,7 @@ function initQuiz() {
     renderQuestion();
   });
 
+  // syncFromSession first so question_time and buffer_enabled are loaded
   (async () => {
     try {
       await syncFromSession();
@@ -1067,31 +1065,16 @@ function initResults() {
   let state = ensureMetrics(loadState() || defaultState());
   const player = state.active_player || (state.players && state.players[0]) || "Player";
 
-  function renderResults(metrics) {
-    setText("playerName", metrics.player_name || player);
-    setText("resultsCategory", metrics.category || capitalizeCategory(state.bank_id));
-    setText("resultsSession", metrics.session_code || state.session_code || "—");
+  const clampPercent = (v) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(n, 100));
+  };
 
-    setText("correctCount", String(metrics.correct ?? "—"));
-    setText("wrongCount", String(metrics.wrong ?? "—"));
-    setText("answeredCount", String(metrics.answered ?? "—"));
-    setText("accuracyPercent", formatPercent(metrics.accuracy_percent));
-
-    setText("scorePoints", String(metrics.final_score ?? "—"));
-    setText("maxScorePoints", String(metrics.max_score ?? "—"));
-    setText("pointsEarned", String(metrics.points_earned ?? "—"));
-    setText("pointsLost", String(metrics.points_lost ?? "—"));
-
-    setText("avgResponseTime", formatSeconds(metrics.avg_response_time));
-    setText("fastestCorrectTime", formatSeconds(metrics.fastest_correct_time));
-    setText("slowestCorrectTime", formatSeconds(metrics.slowest_correct_time));
-    setText("avgMultiplier", Number.isFinite(metrics.avg_multiplier) ? String(metrics.avg_multiplier) : "—");
-
-    setText("questionCount", String(metrics.question_count ?? "—"));
-    setText("unansweredCount", String(metrics.unanswered ?? "—"));
-    setText("scoreOutOfMax", formatRatio(metrics.final_score, metrics.max_score));
-    setText("performanceRating", metrics.performance_rating || "—");
-  }
+  const setBarWidth = (id, pct) => {
+    const el = $(id);
+    if (el && el.style) el.style.width = `${clampPercent(pct)}%`;
+  };
 
   async function loadResults() {
     if (statusEl) statusEl.textContent = "Loading results…";
@@ -1108,8 +1091,21 @@ function initResults() {
       }
     }
 
-    const metrics = calculateLocalResultsMetrics(state, backendData);
-    renderResults(metrics);
+      const correct = Number(data.correct ?? 0);
+      const wrong = Number(data.wrong ?? 0);
+      const score = Number(data.final_score ?? data.score ?? 0);
+      const total = correct + wrong;
+      const accuracyPct = total > 0 ? (correct / total) * 100 : 0;
+
+      setText("correctCount", Number.isFinite(correct) ? String(correct) : "—");
+      setText("wrongCount", Number.isFinite(wrong) ? String(wrong) : "—");
+      setText("scorePoints", Number.isFinite(score) ? String(score) : "—");
+
+      // Visual meter fills; safe no-ops if the elements are absent.
+      setBarWidth("scoreBar", score);
+      setBarWidth("barAccuracy", accuracyPct);
+      setBarWidth("barSpeed", data.speed_pct ?? 60);          // optional backend field or placeholder
+      setBarWidth("barConsistency", data.consistency_pct ?? 60);
 
     if (statusEl) {
       statusEl.textContent = `Results loaded for ${player}.`;
@@ -1135,3 +1131,4 @@ document.addEventListener("DOMContentLoaded", () => {
   if ($("questionText") && $("answers")) initQuiz();
   if ($("backToLobbyBtn") || $("resultsStatus")) initResults();
 });
+
