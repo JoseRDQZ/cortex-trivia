@@ -1,13 +1,5 @@
 /**
- * Cortex Trivia — Frontend Integration (Sprint 2 + Sprint 3)
- *
- * Jose Rodriguez (me):
- * - I'm keeping the existing Sprint 2 demo flow stable (Lobby → Quiz → Results).
- * - I'm adding Sprint 3 scaffolding (Host page + Player page) without rewriting what already works.
- *
- * Why I'm doing it this way:
- * - I want the UI to be testable at every step (no "big bang" refactor right before a demo).
- * - I want the backend contract to be flexible while teammates iterate (support old + new endpoints).
+ * Cortex Trivia — Sprint 6 - 7
  */
 
 const API_BASE = "";
@@ -129,11 +121,6 @@ async function tryGet(paths) {
 
 /* =========================================================
    PAGE: Lobby (frontend/index.html)
-   IDs used:
-   - createName, bankSelect, createBtn
-   - joinCode, joinName, joinBtn
-   - sessionCode, playerList, statusText
-   - startBtn, leaveBtn (legacy demo buttons; we keep them safe)
 ========================================================= */
 function initLobby() {
   const createBtn = $("createBtn");
@@ -261,21 +248,13 @@ function initLobby() {
 
 /* =========================================================
    PAGE: Host (frontend/host.html)
-   IDs used:
-   - hostSessionCode, hostBank, hostPlayers, hostStatus
-   - hostStartBtn, hostBackBtn, copyCodeBtn
-   - .timer-btn (buttons with data-time attribute for timer selection)
-   - bufferOn, bufferOff (buttons to toggle buffer)
 ========================================================= */
 function initHost() {
   if (!$("hostStartBtn")) return;
 
   let state = loadState() || defaultState();
 
-  // ==============================================================
   // syncControlUI: visually highlights the active timer/buffer btn
-  // Added from classmate's version for host timer controls
-  // ==============================================================
   function syncControlUI() {
     const currentTime = state.question_time || 30;
 
@@ -290,11 +269,7 @@ function initHost() {
     bufferOffBtn?.classList.toggle("selected", !state.buffer_enabled);
   }
 
-  // ==============================================================
   // Timer buttons: host clicks to set question time (e.g. 15s, 30s)
-  // Each button needs data-time="15" (or whatever value) in HTML
-  // Added from classmate's version
-  // ==============================================================
   document.querySelectorAll(".timer-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const val = Number(btn.dataset.time);
@@ -306,10 +281,7 @@ function initHost() {
     });
   });
 
-  // ==============================================================
   // Buffer toggle: host enables or disables the pre-question buffer
-  // Added from classmate's version
-  // ==============================================================
   $("bufferOn")?.addEventListener("click", () => {
     state.buffer_enabled = true;
     saveState(state);
@@ -437,9 +409,6 @@ function initHost() {
 
 /* =========================================================
    PAGE: Player (frontend/player.html)
-   IDs used:
-   - playerSessionCode, playerName, playerStatus
-   - playerCheckBtn, playerOpenQuizBtn, playerBackBtn
 ========================================================= */
 function initPlayer() {
   if (!$("playerCheckBtn")) return;
@@ -508,11 +477,6 @@ function initPlayer() {
 
 /* =========================================================
    PAGE: Quiz (frontend/quiz.html)
-   This keeps your Sprint 2 behavior:
-   - game_id must exist
-   - fetch questions
-   - submit answer
-   - next question
 ========================================================= */
 function initQuiz() {
   // I only run quiz logic if quiz-specific elements exist.
@@ -600,26 +564,22 @@ function initQuiz() {
     submitBtn.disabled = true;
     nextBtn.disabled = true;
 
-    // ==============================================================
-    // startQuestionTimer: reads question_time from state so it
-    // respects whatever the host configured (added from classmate)
-    // ==============================================================
+    // startQuestionTimer: uses host-configured time
     function startQuestionTimer() {
       answersEl.style.visibility = "visible";
       setQuizStatus("Pick an answer.");
 
-      // Use host-configured time instead of hardcoded constant
       const questionTime = state.question_time || 30;
       let remaining = questionTime;
       currentTimeRemaining = questionTime;
 
-      if (timerEl) timerEl.textContent = ` ${remaining}`;
+      if (timerEl) timerEl.textContent = `${remaining}`;
 
       interval = setInterval(async () => {
         remaining = Math.max(remaining - 1, 0);
         currentTimeRemaining = remaining;
 
-        if (timerEl) timerEl.textContent = ` ${remaining}`;
+        if (timerEl) timerEl.textContent = `${remaining}`;
 
         if (remaining === 0) {
           clearInterval(interval);
@@ -663,11 +623,7 @@ function initQuiz() {
       }, 1000);
     }
 
-    // ==============================================================
     // Buffer handling: respects host's buffer_enabled setting
-    // If buffer is off, skip straight to the question timer
-    // Added from classmate's version (replaces hardcoded BUFFER_TIME)
-    // ==============================================================
     const bufferTime = state.buffer_enabled ? 5 : 0;
 
     if (bufferTime > 0) {
@@ -675,11 +631,11 @@ function initQuiz() {
       setQuizStatus("Get ready...");
 
       let bufferRemaining = bufferTime;
-      if (timerEl) timerEl.textContent = ` ${bufferRemaining}`;
+      if (timerEl) timerEl.textContent = `${bufferRemaining}`;
 
       bufferInterval = setInterval(() => {
         bufferRemaining--;
-        if (timerEl) timerEl.textContent = ` ${bufferRemaining}`;
+        if (timerEl) timerEl.textContent = `${bufferRemaining}`;
 
         if (bufferRemaining <= 0) {
           clearInterval(bufferInterval);
@@ -692,15 +648,10 @@ function initQuiz() {
     }
   }
 
-  // ==============================================================
-  // syncFromSession: pulls question_time + buffer_enabled from
-  // backend before quiz starts so player uses host's settings
-  // Added from classmate's version
-  // ==============================================================
+  // syncFromSession: pulls question_time + buffer_enabled from backend
   async function syncFromSession() {
     const resp = await tryGet([`/session/${encodeURIComponent(state.session_code)}`]);
 
-    // Merge backend response into state so question_time and buffer_enabled are up to date
     state = {
       ...state,
       ...resp
@@ -791,7 +742,6 @@ function initQuiz() {
   });
 
   // syncFromSession first so question_time and buffer_enabled are loaded
-  // before the first question renders (added from classmate's version)
   (async () => {
     try {
       await syncFromSession();
@@ -816,15 +766,38 @@ function initResults() {
   const state = loadState() || defaultState();
   const player = state.active_player || (state.players && state.players[0]) || "Player";
 
+  const clampPercent = (v) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, Math.min(n, 100));
+  };
+
+  const setBarWidth = (id, pct) => {
+    const el = $(id);
+    if (el && el.style) el.style.width = `${clampPercent(pct)}%`;
+  };
+
   async function loadResults() {
     if (statusEl) statusEl.textContent = "Loading results…";
 
     try {
       const data = await apiRequest(`/results/${encodeURIComponent(player)}`, { method: "GET" });
 
-      setText("correctCount", String(data.correct ?? "—"));
-      setText("wrongCount", String(data.wrong ?? "—"));
-      setText("scorePoints", String(data.final_score ?? "—"));
+      const correct = Number(data.correct ?? 0);
+      const wrong = Number(data.wrong ?? 0);
+      const score = Number(data.final_score ?? data.score ?? 0);
+      const total = correct + wrong;
+      const accuracyPct = total > 0 ? (correct / total) * 100 : 0;
+
+      setText("correctCount", Number.isFinite(correct) ? String(correct) : "—");
+      setText("wrongCount", Number.isFinite(wrong) ? String(wrong) : "—");
+      setText("scorePoints", Number.isFinite(score) ? String(score) : "—");
+
+      // Visual meter fills; safe no-ops if the elements are absent.
+      setBarWidth("scoreBar", score);
+      setBarWidth("barAccuracy", accuracyPct);
+      setBarWidth("barSpeed", data.speed_pct ?? 60);          // optional backend field or placeholder
+      setBarWidth("barConsistency", data.consistency_pct ?? 60);
 
       if (statusEl) statusEl.textContent = `Results loaded for ${player}.`;
     } catch (err) {
@@ -852,3 +825,4 @@ document.addEventListener("DOMContentLoaded", () => {
   if ($("questionText") && $("answers")) initQuiz();
   if ($("backToLobbyBtn") || $("resultsStatus")) initResults();
 });
+

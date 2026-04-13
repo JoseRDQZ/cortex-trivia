@@ -6,18 +6,35 @@
   <title>Cortex Trivia — Host</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
-<body>
+<body data-page="host">
   <header class="header">
     <div class="container header__inner">
       <h1 class="brand">Cortex Trivia</h1>
       <div class="row">
-        <span class="pill">Host</span>
+        <span class="pill" style="border-color:var(--primary); color:var(--primary);">Host</span>
         <a class="pill" href="./index.html">Lobby</a>
+        <span class="pill">New Theme</span>
       </div>
     </div>
   </header>
 
   <main class="container">
+    <!-- Quick host tips: no JS dependency -->
+    <section class="card" style="margin-top:12px;">
+      <div class="row" style="justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div class="label muted">Host checklist</div>
+          <p class="muted" style="margin:4px 0 0;">
+            Share the session code, pick timer + buffer, then start when everyone is in.
+          </p>
+        </div>
+        <div class="row" style="gap:8px;">
+          <span class="pill">Max: 16 players</span>
+          <span class="pill">Keep code handy</span>
+        </div>
+      </div>
+    </section>
+
     <div class="card">
       <div class="row" style="justify-content:space-between;">
         <div>
@@ -85,3 +102,4 @@
   <script src="./app.js"></script>
 </body>
 </html>
+

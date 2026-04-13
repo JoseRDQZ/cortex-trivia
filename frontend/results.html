@@ -13,36 +13,97 @@
     <div class="container header__inner">
       <h1 class="brand">Cortex Trivia</h1>
       <div class="row">
-        <span class="pill">Results</span>
+        <span class="pill" style="border-color:var(--primary); color:var(--primary);">Results</span>
+        <a class="pill" href="./index.html">Lobby</a>
       </div>
     </div>
   </header>
 
   <main class="container">
-    <section class="card">
-      <h2>Final Results</h2>
-
-      <div class="panel">
-        <div class="row">
-          <div>
-            <div class="label muted">Correct</div>
-            <div class="mono" id="correctCount">—</div>
-          </div>
-          <div>
-            <div class="label muted">Wrong</div>
-            <div class="mono" id="wrongCount">—</div>
-          </div>
-          <div>
-            <div class="label muted">Score (out of 100)</div>
-            <div class="mono" id="scorePoints">—</div>
+    <!-- Hero summary -->
+    <section class="card" style="margin-top:12px;">
+      <div class="row" style="justify-content:space-between; align-items:flex-end;">
+        <div>
+          <div class="label muted">Match complete</div>
+          <h2 style="margin:6px 0 0;">Final Results</h2>
+          <p class="muted" style="margin:6px 0 0;">Review your score and see how you did.</p>
+        </div>
+        <!-- Visual score meter; JS can optionally set width on #scoreBar -->
+        <div style="min-width:220px;">
+          <div class="label muted">Score meter</div>
+          <div style="background:rgba(255,255,255,0.06); border:1px solid var(--border); border-radius:12px; overflow:hidden; height:16px;">
+            <div id="scoreBar" style="
+              height:100%;
+              width:60%; /* default fill; adjust in JS if desired */
+              background:linear-gradient(135deg, var(--primary), var(--primary-strong));
+              transition:width .3s ease;
+            "></div>
           </div>
         </div>
+      </div>
+    </section>
 
-        <div class="status" id="resultsStatus">Loading results…</div>
+    <section class="grid">
+      <!-- Numeric summary (JS writes into these IDs) -->
+      <div class="card">
+        <div class="panel">
+          <div class="row" style="gap:20px; align-items:flex-start;">
+            <div>
+              <div class="label muted">Correct</div>
+              <div class="big mono" id="correctCount">—</div>
+            </div>
+            <div>
+              <div class="label muted">Wrong</div>
+              <div class="big mono" id="wrongCount">—</div>
+            </div>
+            <div>
+              <div class="label muted">Score (out of 100)</div>
+              <div class="big mono" id="scorePoints">—</div>
+            </div>
+          </div>
 
-        <div class="row right">
-          <!-- JOSE INTEGRATION: real button so app.js can clear state -->
-          <button class="btn primary" id="backToLobbyBtn">Back to Lobby</button>
+          <div class="divider"></div>
+
+          <div id="resultsStatus" class="status">Loading results…</div>
+
+          <div class="row right">
+            <!-- JOSE INTEGRATION: real button so app.js can clear state -->
+            <button class="btn primary" id="backToLobbyBtn">Back to Lobby</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual breakdown placeholder; non-blocking and data-neutral -->
+      <div class="card">
+        <div class="panel">
+          <div class="label muted">Performance glance</div>
+          <p class="muted" style="margin:4px 0 12px;">Quick visuals to reduce text clutter.</p>
+          <!-- Bars use static widths as placeholders; safe if JS ignores them -->
+          <div style="margin-bottom:10px;">
+            <div class="row" style="justify-content:space-between;">
+              <span class="muted">Accuracy</span><span class="muted">—</span>
+            </div>
+            <div style="height:10px; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:rgba(255,255,255,0.04);">
+              <div style="height:100%; width:70%; background:var(--primary);"></div>
+            </div>
+          </div>
+          <div style="margin-bottom:10px;">
+            <div class="row" style="justify-content:space-between;">
+              <span class="muted">Speed</span><span class="muted">—</span>
+            </div>
+            <div style="height:10px; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:rgba(255,255,255,0.04);">
+              <div style="height:100%; width:55%; background:linear-gradient(135deg, var(--primary), var(--primary-strong));"></div>
+            </div>
+          </div>
+          <div>
+            <div class="row" style="justify-content:space-between;">
+              <span class="muted">Consistency</span><span class="muted">—</span>
+            </div>
+            <div style="height:10px; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:rgba(255,255,255,0.04);">
+              <div style="height:100%; width:60%; background:var(--primary-strong);"></div>
+            </div>
+          </div>
+          <!-- These bars are visual placeholders; swap with real values later if needed -->
         </div>
       </div>
     </section>
@@ -51,3 +112,4 @@
   <script src="./app.js"></script>
 </body>
 </html>
+

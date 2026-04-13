@@ -16,11 +16,28 @@
       <div class="row">
         <span class="pill">Sprint 3</span>
         <span class="pill">Host / Player Split</span>
+        <span class="pill">New Theme</span>
       </div>
     </div>
   </header>
 
   <main class="container">
+    <!-- Hero strip: lightweight “how to” and status summary -->
+    <section class="card" style="margin-top:12px;">
+      <div class="row" style="justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div class="label muted">How to play</div>
+          <p class="muted" style="margin:4px 0 0;">
+            Create or join with a session code, wait for everyone, then the host starts the game. Answer fast, score high.
+          </p>
+        </div>
+        <div class="row" style="gap:8px;">
+          <span class="pill" style="border-color:var(--primary); color:var(--primary);">Live Demo</span>
+          <span class="pill">Max: 16 players</span>
+        </div>
+      </div>
+    </section>
+
     <section class="grid">
       <div class="card">
         <h2>Session Lobby</h2>
@@ -56,7 +73,7 @@
           <label class="label" for="joinCode">Session code</label>
           <input class="input" id="joinCode" placeholder="ABC123" maxlength="10" />
 
-          <label class="label" for="joinName">Player name</label>
+          <label class="label" for "joinName">Player name</label>
           <input class="input" id="joinName" placeholder="Player" maxlength="16" />
 
           <div class="row right">
