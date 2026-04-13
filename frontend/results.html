@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
@@ -70,6 +71,62 @@
             <!-- JOSE INTEGRATION: real button so app.js can clear state -->
             <button class="btn primary" id="backToLobbyBtn">Back to Lobby</button>
           </div>
+          <div>
+            <div class="label muted">Maximum Possible</div>
+            <div class="mono" id="maxScorePoints">—</div>
+          </div>
+          <div>
+            <div class="label muted">Points Earned</div>
+            <div class="mono" id="pointsEarned">—</div>
+          </div>
+          <div>
+            <div class="label muted">Points Lost</div>
+            <div class="mono" id="pointsLost">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Timing and Performance</h3>
+        <div class="row">
+          <div>
+            <div class="label muted">Average Response Time</div>
+            <div class="mono" id="avgResponseTime">—</div>
+          </div>
+          <div>
+            <div class="label muted">Fastest Correct Answer</div>
+            <div class="mono" id="fastestCorrectTime">—</div>
+          </div>
+          <div>
+            <div class="label muted">Slowest Correct Answer</div>
+            <div class="mono" id="slowestCorrectTime">—</div>
+          </div>
+          <div>
+            <div class="label muted">Average Multiplier</div>
+            <div class="mono" id="avgMultiplier">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Gameplay Details</h3>
+        <div class="row">
+          <div>
+            <div class="label muted">Questions in Session</div>
+            <div class="mono" id="questionCount">—</div>
+          </div>
+          <div>
+            <div class="label muted">Unanswered</div>
+            <div class="mono" id="unansweredCount">—</div>
+          </div>
+          <div>
+            <div class="label muted">Score Out of Max</div>
+            <div class="mono" id="scoreOutOfMax">—</div>
+          </div>
+          <div>
+            <div class="label muted">Performance Rating</div>
+            <div class="mono" id="performanceRating">—</div>
+          </div>
         </div>
       </div>
 
@@ -111,5 +168,6 @@
 
   <script src="./app.js"></script>
 </body>
+
 </html>
 

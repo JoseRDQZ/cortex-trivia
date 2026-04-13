@@ -42,9 +42,9 @@
       <div class="card">
         <h2>Session Lobby</h2>
         <p class="muted">
-          <!-- JOSE INTEGRATION: Sprint 3 routing change -->
-          Sprint 3 update: Create sends the host to <span class="mono">host.html</span>. Join sends the player to
-          <span class="mono">player.html</span>.
+          Sprint 5 update: The project is now focused on gameplay refinement,
+          improved score visibility, stronger multiplayer stability, and better
+          results tracking for each player.
         </p>
 
         <div class="panel">
@@ -62,7 +62,6 @@
           </select>
 
           <div class="row right">
-            <!-- JOSE INTEGRATION: enabled + routed to host.html -->
             <button class="btn primary" id="createBtn">Create</button>
           </div>
         </div>
@@ -77,7 +76,6 @@
           <input class="input" id="joinName" placeholder="Player" maxlength="16" />
 
           <div class="row right">
-            <!-- JOSE INTEGRATION: enabled + routed to player.html -->
             <button class="btn primary" id="joinBtn">Join</button>
           </div>
         </div>
@@ -101,17 +99,38 @@
       </div>
 
       <div class="card">
-        <h2>Demo Notes</h2>
+        <h2>Sprint 5 Progression</h2>
         <p class="muted">
-          Host flow: <span class="mono">index → host.html → Start Game → quiz.html → results.html</span><br />
-          Player flow: <span class="mono">index → player.html</span>
+          Current focus: refining the multiplayer experience, improving the
+          timer and scoring behavior, and expanding the results screen to show
+          more detailed player performance metrics.
         </p>
+
         <div class="panel">
           <ul class="muted">
-            <li>Category is selected before session creation</li>
-            <li>Host owns starting the game</li>
-            <li>Player page is for joining + waiting / status (Sprint 3)</li>
+            <li>Time-based scoring and timer behavior are already integrated</li>
+            <li>Current work focuses on gameplay stability and score fairness</li>
+            <li>Results are being expanded to show deeper player statistics</li>
+            <li>Deployment and hosting preparation remain part of Sprint 5 goals</li>
           </ul>
+        </div>
+
+        <div class="panel">
+          <h3>Current Gameplay Focus</h3>
+          <ul class="muted">
+            <li>Improved score multiplier visibility</li>
+            <li>More detailed results metrics for each player</li>
+            <li>Better multiplayer session completion behavior</li>
+            <li>Continued refinement of timer synchronization</li>
+          </ul>
+        </div>
+
+        <div class="panel">
+          <h3>Flow Notes</h3>
+          <p class="muted">
+            Host flow: <span class="mono">index → host.html → Start Game → quiz.html → results.html</span><br />
+            Player flow: <span class="mono">index → player.html</span>
+          </p>
         </div>
       </div>
     </section>
@@ -121,4 +140,3 @@
 </body>
 
 </html>
-
