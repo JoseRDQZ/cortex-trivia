@@ -11,14 +11,12 @@
 <!-- JOSE INTEGRATION: app.js uses data-page to decide which initializer to run -->
 <body data-page="lobby">
   <header class="header">
-    <!-- Centered brand; pills removed as requested -->
     <div class="container header__inner" style="justify-content:center;">
       <h1 class="brand">Cortex Trivia</h1>
     </div>
   </header>
 
-  <main class="container" style="max-width:920px;">
-    <!-- Hero strip: kept concise; no sprint pills -->
+  <main class="container" style="max-width:900px;">
     <section class="card" style="margin-top:12px;">
       <div class="row" style="justify-content:space-between; align-items:flex-start;">
         <div>
@@ -34,12 +32,11 @@
       </div>
     </section>
 
-    <!-- Single-column layout: Session Lobby centered, Sprint 5 content removed -->
-    <section class="card" style="margin-top:12px;">
+    <!-- Single, centered lobby card -->
+    <section class="card" style="margin-top:12px; max-width:820px; margin-left:auto; margin-right:auto;">
       <h2 style="text-align:center;">Session Lobby</h2>
-      <p class="muted" style="text-align:center;">
-        Sprint 3 update: Create sends the host to <span class="mono">host.html</span>. Join sends the player to
-        <span class="mono">player.html</span>.
+      <p class="muted" style="text-align:center; margin-top:6px;">
+        Create a session for your group or join an existing one to jump into trivia.
       </p>
 
       <div class="panel">
@@ -94,6 +91,11 @@
         <div class="status" id="statusText">Ready.</div>
       </div>
     </section>
+
+    <!-- Footer credit, bottom-left of the main content area -->
+    <p class="muted" style="margin:16px 0 12px; font-size:12px;">
+      Made by: Jose Rodriguez, Daniel Losa, Diego A Sanchez, Deijen Severino, Renier Herba Borrego
+    </p>
   </main>
 
   <script src="./app.js"></script>
